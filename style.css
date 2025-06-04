@@ -1,0 +1,242 @@
+body {
+    font-family: sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+h1, h2 {
+    text-align: center;
+    color: #2c3e50;
+}
+
+#settings, #fretboard-container, #practice-modes, #stats {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Add more specific styles as components are built */
+/* Fretboard Styles */
+#fretboard-container {
+    overflow-x: auto; /* Allow horizontal scrolling if fretboard is wide */
+    padding: 30px 10px 10px 10px; /* Add padding for fret numbers */
+}
+
+.fretboard {
+    display: inline-block; /* Prevent collapsing */
+    border: 2px solid #666; /* Fretboard wood color */
+    background-color: #deb887; /* Lighter wood color */
+    position: relative; /* For positioning fret markers */
+    min-width: 600px; /* Ensure minimum width */
+}
+
+.fret-numbers {
+    display: flex;
+    position: absolute;
+    top: -25px; /* Position above the fretboard */
+    left: 40px; /* Align with the start of frets */
+    width: calc(100% - 40px); /* Match fret area width */
+    font-size: 0.8em;
+    color: #555;
+}
+
+.fret-numbers div {
+    flex: 1; /* Distribute space evenly */
+    text-align: center;
+    min-width: 40px; /* Minimum width per fret number */
+    box-sizing: border-box;
+    padding-right: 2px; /* Space before fret wire */
+}
+
+
+.string {
+    display: flex;
+    height: 20px; /* Height of the string area */
+    align-items: center; /* Center frets vertically */
+    border-bottom: 1px solid #ccc; /* Subtle string line */
+}
+
+.string:last-child {
+    border-bottom: none;
+}
+
+.fret {
+    height: 100%;
+    flex: 1; /* Frets share space */
+    min-width: 40px; /* Minimum fret width */
+    border-right: 2px solid #aaa; /* Fret wire */
+    box-sizing: border-box;
+    position: relative; /* For marker positioning */
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.fret.open {
+    min-width: 40px; /* Width of the nut area */
+    flex-grow: 0;
+    flex-shrink: 0;
+    border-right: 4px solid #444; /* Nut */
+    border-left: none;
+}
+
+.fret:last-child {
+    border-right: none;
+}
+
+.fret:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.fret.clicked {
+    background-color: rgba(46, 204, 113, 0.5); /* Highlight color on click */
+}
+
+/* Fret Markers */
+.fret.marker-single::after,
+.fret.marker-double::before,
+.fret.marker-double::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: #a0a0a0; /* Marker color */
+    border-radius: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.fret.marker-single::after {
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.fret.marker-double::before {
+    top: 25%;
+    transform: translate(-50%, -50%);
+}
+
+.fret.marker-double::after {
+    bottom: 25%;
+    transform: translate(-50%, 50%);
+}
+
+/* Adjust fret width progressively (optional but realistic) */
+/* Example: Make higher frets slightly narrower */
+/* .string .fret:nth-child(n+10) { min-width: 38px; }
+.string .fret:nth-child(n+15) { min-width: 36px; } */
+/* Practice Mode Styles */
+.practice-mode-content {
+    border: 1px dashed #ccc;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.options-container {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.options-container button {
+    padding: 8px 12px;
+    cursor: pointer;
+    border: 1px solid #bbb;
+    background-color: #eee;
+    border-radius: 4px;
+}
+
+.options-container button:hover {
+    background-color: #ddd;
+}
+
+.feedback {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.feedback.correct {
+    color: green;
+}
+
+.feedback.incorrect {
+    color: red;
+}
+
+/* Fret highlighting for practice modes */
+.fret.highlighted {
+    background-color: rgba(255, 165, 0, 0.7); /* Orange highlight */
+    border: 1px solid darkorange;
+    border-radius: 50%; /* Make highlights circular */
+    position: relative; /* Needed for z-index */
+    z-index: 10; /* Ensure highlight is above fret lines */
+    width: 18px; /* Adjust size as needed */
+    height: 18px; /* Adjust size as needed */
+    margin: auto; /* Center the circle within the fret */
+    box-sizing: border-box;
+}
+
+/* Adjust highlight position slightly */
+.fret.highlighted::before { /* Pseudo-element to hold the highlight */
+    content: '';
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 165, 0, 0.7);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+/* Mode B Highlight Styles */
+.fret.highlighted-correct {
+    background-color: rgba(46, 204, 113, 0.7) !important; /* Greenish highlight for correct */
+    border: 1px solid green;
+    border-radius: 50%;
+    position: relative;
+    z-index: 11; /* Above standard highlight */
+    width: 18px;
+    height: 18px;
+    margin: auto;
+    box-sizing: border-box;
+}
+
+.fret.highlighted-correct::before {
+    content: ''; display: block; width: 100%; height: 100%;
+    background-color: rgba(46, 204, 113, 0.7);
+    border-radius: 50%; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+
+.fret.highlighted-incorrect {
+    background-color: rgba(231, 76, 60, 0.7) !important; /* Reddish highlight for incorrect */
+    border: 1px solid darkred;
+    border-radius: 50%;
+    position: relative;
+    z-index: 11;
+    width: 18px;
+    height: 18px;
+    margin: auto;
+    box-sizing: border-box;
+    animation: shake 0.5s; /* Add a shake animation for incorrect */
+}
+
+.fret.highlighted-incorrect::before {
+     content: ''; display: block; width: 100%; height: 100%;
+     background-color: rgba(231, 76, 60, 0.7);
+     border-radius: 50%; position: absolute; top: 50%; left: 50%;
+     transform: translate(-50%, -50%);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-3px); }
+}

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitar Fretboard Triad Practice Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Guitar Fretboard Triad Practice Tool</h1>
+
+    <div id="settings">
+        <h2>Settings</h2>
+        <div id="triad-selection">
+            <h3>Triad Types:</h3>
+            <label><input type="checkbox" name="triad-type" value="Major" checked> Major</label>
+            <label><input type="checkbox" name="triad-type" value="Minor"> Minor</label>
+            <label><input type="checkbox" name="triad-type" value="Diminished"> Diminished</label>
+            <label><input type="checkbox" name="triad-type" value="Augmented"> Augmented</label>
+        </div>
+        <div id="inversion-selection">
+            <h3>Inversions:</h3>
+            <label><input type="checkbox" id="include-inversions"> Include 1st & 2nd Inversions</label>
+        </div>
+        <div id="audio-settings">
+            <h3>Audio:</h3>
+            <label><input type="checkbox" id="enable-sound" checked> Enable Sound</label>
+        </div>
+        <!-- More settings controls will go here -->
+    </div>
+
+    <div id="fretboard-container">
+        <h2>Fretboard</h2>
+        <!-- Fretboard visualization will go here -->
+    </div>
+
+    <div id="practice-modes">
+        <h2>Practice Modes</h2>
+        <div id="mode-a" class="practice-mode-content" style="display: none;"> <!-- Initially hidden -->
+            <h3>Mode A: Chord Identification</h3>
+            <p>Identify the highlighted triad on the fretboard.</p>
+            <button id="mode-a-next">Show Chord / Next Chord</button>
+            <div id="mode-a-options" class="options-container">
+                <!-- Multiple choice options will be generated here -->
+            </div>
+            <div id="mode-a-feedback" class="feedback"></div>
+             <!-- TODO: Add controls for hiding fret numbers/note names -->
+        </div>
+        <div id="mode-b" class="practice-mode-content" style="display: none;"> <!-- Initially hidden -->
+             <h3>Mode B: Chord Completion</h3>
+             <p id="mode-b-instruction">Click the remaining notes on the fretboard to complete the triad.</p>
+             <div id="mode-b-target">Target: <span>---</span></div>
+             <button id="mode-b-next">Next Chord</button>
+             <div id="mode-b-feedback" class="feedback"></div>
+        </div>
+        <button id="select-mode-a">Start Mode A</button>
+         <button id="select-mode-b">Start Mode B</button>
+    </div>
+
+    <div id="stats">
+        <h2>Statistics</h2>
+        <!-- Statistics display will go here -->
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
