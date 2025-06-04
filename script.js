@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTuning = [...standardTuning];
     let numFrets = 12;
     let selectedTriadTypes = ['Major']; // Default
-    let includeInversions = false;
+    let selectedInversions = [0]; // Default to root position only
     let practiceMode = null; // e.g., 'identification', 'completion'
     let userPerformance = []; // Array to store quiz results
     let soundEnabled = true; // Default to sound on
@@ -48,28 +48,36 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupTriadSelection() {
         console.log('Setting up triad selection...');
         const triadCheckboxes = document.querySelectorAll('#triad-selection input[name="triad-type"]');
-        const inversionsCheckbox = document.getElementById('include-inversions');
+        const inversionCheckboxes = document.querySelectorAll('#inversion-selection input[name="inversion-type"]');
 
         triadCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', updateSelectedTriads);
         });
 
-        if (inversionsCheckbox) {
-            inversionsCheckbox.addEventListener('change', (event) => {
-                includeInversions = event.target.checked;
-                console.log('Include Inversions:', includeInversions);
-            });
-            includeInversions = inversionsCheckbox.checked; // Initial state
-        }
+        inversionCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedInversions);
+        });
+
         updateSelectedTriads(); // Initial update
+        updateSelectedInversions(); // Initial update
     }
 
     function updateSelectedTriads() {
         const checkedBoxes = document.querySelectorAll('#triad-selection input[name="triad-type"]:checked');
         selectedTriadTypes = Array.from(checkedBoxes).map(cb => cb.value);
-        console.log('Selected Triad Types:', selectedTriadTypes);
+        console.log('Updated Selected Triad Types:', selectedTriadTypes);
         if (selectedTriadTypes.length === 0) {
             console.warn("No triad types selected!");
+        }
+    }
+
+    function updateSelectedInversions() {
+        const checkedBoxes = document.querySelectorAll('#inversion-selection input[name="inversion-type"]:checked');
+        selectedInversions = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+        console.log('Updated Selected Inversions:', selectedInversions);
+        if (selectedInversions.length === 0) {
+            console.warn("No inversions selected!");
+            selectedInversions = [0]; // Default to root position if none selected
         }
     }
 
@@ -81,20 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fretboard = document.createElement('div');
         fretboard.className = 'fretboard';
 
-        // Issue 1: Remove fret numbers display
-        // const fretNumbersRow = document.createElement('div');
-        // fretNumbersRow.className = 'fret-numbers';
-        // const emptyCellForNut = document.createElement('div');
-        // emptyCellForNut.style.minWidth = '40px'; // Match .fret.open style if it has min-width
-        // emptyCellForNut.style.flexGrow = '0';
-        // emptyCellForNut.style.flexShrink = '0';
-        // fretNumbersRow.appendChild(emptyCellForNut);
-        // for (let i = 1; i <= numFrets; i++) {
-        //     const fretNumberDiv = document.createElement('div');
-        //     fretNumberDiv.textContent = i;
-        //     fretNumbersRow.appendChild(fretNumberDiv);
-        // }
-        // fretboard.appendChild(fretNumbersRow);
+        // Issue 1: Fret numbers removed - no fret number row created
 
         for (let s = 0; s < currentTuning.length; s++) { // s=0 is high E, s=5 is low E
             const stringDiv = document.createElement('div');
@@ -268,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const options = new Set([correctAnswer]);
         const allPossibleRoots = notes;
         const possibleTypes = selectedTriadTypes.length > 0 ? selectedTriadTypes : Object.keys(triadIntervals);
+        const possibleInversions = selectedInversions.length > 0 ? selectedInversions : [0];
 
         if (possibleTypes.length === 0) {
             optionsContainer.textContent = "Error: No triad types for options.";
@@ -278,8 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
         while (options.size < numOptions && attempts < 100) {
             const randomRootOpt = getRandomElement(allPossibleRoots);
             const randomTypeOpt = getRandomElement(possibleTypes);
-            if (!randomRootOpt || !randomTypeOpt) { attempts++; continue; }
-            const randomInversionOpt = includeInversions ? Math.floor(Math.random() * 3) : 0;
+            const randomInversionOpt = getRandomElement(possibleInversions);
+            if (!randomRootOpt || !randomTypeOpt || randomInversionOpt === undefined) { attempts++; continue; }
             const distractor = formatChordName(randomRootOpt, randomTypeOpt, randomInversionOpt);
             if (distractor !== correctAnswer) options.add(distractor);
             attempts++;
@@ -304,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         feedbackContainer.textContent = correct ? 'Correct!' : `Incorrect. Answer: ${currentModeAChallenge.correctAnswer}.`;
         feedbackContainer.className = `feedback ${correct ? 'correct' : 'incorrect'}`;
         document.querySelectorAll('#mode-a-options button').forEach(b => b.disabled = true);
-        recordQuizAttempt({ mode: 'A', question: currentModeAChallenge.correctAnswer, answer: selectedAnswer, isCorrect: correct, notes: currentModeAChallenge.notesToHighlight });
+        recordQuizAttempt({ mode: 'A', question: currentModeAChallenge.correctAnswer, answer: selectedAnswer, isCorrect: correct });
 
         // Issue 2: Automatically show the next chord after a delay
         setTimeout(() => {
@@ -315,6 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function startModeA() {
         practiceMode = 'identification';
         console.log('Starting Mode A');
+        console.log('Current selectedTriadTypes:', selectedTriadTypes);
+        console.log('Current selectedInversions:', selectedInversions);
         clearHighlights();
         const optionsContainer = document.getElementById('mode-a-options');
         const feedbackContainer = document.getElementById('mode-a-feedback');
@@ -323,20 +321,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (feedbackContainer) feedbackContainer.innerHTML = '';
         document.querySelectorAll('#mode-a-options button').forEach(b => b.disabled = false);
 
-        if (selectedTriadTypes.length === 0) {
-            if (feedbackContainer) feedbackContainer.textContent = 'Select triad types in Settings.';
+        if (selectedTriadTypes.length === 0 || selectedInversions.length === 0) {
+            if (feedbackContainer) feedbackContainer.textContent = 'Select triad types and inversions in Settings.';
             if (optionsContainer) optionsContainer.innerHTML = '';
             return;
         }
 
         const randomRoot = getRandomElement(notes);
         const randomType = getRandomElement(selectedTriadTypes);
-        if (!randomRoot || !randomType) {
+        const randomInversion = getRandomElement(selectedInversions);
+        if (!randomRoot || !randomType || randomInversion === undefined) {
             if (feedbackContainer) feedbackContainer.textContent = 'Error generating chord.';
             if (optionsContainer) optionsContainer.innerHTML = '';
             return;
         }
-        const randomInversion = includeInversions ? Math.floor(Math.random() * 3) : 0;
         const notesToDisplay = findTriadVoicingOnFretboard(randomRoot, randomType, randomInversion);
 
         if (!notesToDisplay) {
@@ -354,6 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function startModeB() {
         practiceMode = 'completion';
         console.log('Starting Mode B');
+        console.log('Current selectedTriadTypes:', selectedTriadTypes);
+        console.log('Current selectedInversions:', selectedInversions);
         clearHighlights();
         document.querySelectorAll('.fret.highlighted-correct, .fret.highlighted-incorrect').forEach(f => {
             f.classList.remove('highlighted-correct', 'highlighted-incorrect');
@@ -367,17 +367,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetDisplay) targetDisplay.textContent = '---';
         if (instructionText) instructionText.textContent = 'Generating...';
 
-        const randomRoot = getRandomElement(notes);
-        const randomType = getRandomElement(Object.keys(triadIntervals));
-        if (!randomRoot || !randomType) {
-            if (instructionText) instructionText.textContent = 'Error generating chord for Mode B.';
-            console.error("Mode B: Could not get randomRoot or randomType");
+        if (selectedTriadTypes.length === 0 || selectedInversions.length === 0) {
+            if (instructionText) instructionText.textContent = 'Select triad types and inversions in Settings.';
             return;
         }
-        const randomInversion = includeInversions ? Math.floor(Math.random() * 3) : 0;
+
+        const randomRoot = getRandomElement(notes);
+        const randomType = getRandomElement(selectedTriadTypes);
+        const randomInversion = getRandomElement(selectedInversions);
+        if (!randomRoot || !randomType || randomInversion === undefined) {
+            if (instructionText) instructionText.textContent = 'Error generating chord for Mode B.';
+            console.error("Mode B: Could not get randomRoot, randomType, or randomInversion");
+            return;
+        }
         const triadVoicing = findTriadVoicingOnFretboard(randomRoot, randomType, randomInversion);
 
-        // Issue 3: Ensure triadVoicing has 3 notes. The existing check handles this.
+        // Issue 3: Ensure triadVoicing has 3 notes with 3 unique note names
         if (!triadVoicing || triadVoicing.length !== 3) {
             if (instructionText) instructionText.textContent = 'Finding pattern... (retry)';
             console.warn(`Retrying Mode B: findTriadVoicingOnFretboard returned ${triadVoicing ? triadVoicing.length : 'null'} notes for ${randomRoot} ${randomType} Inv ${randomInversion}.`);
@@ -385,16 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // At this point, triadVoicing is guaranteed to have 3 elements.
+        // At this point, triadVoicing is guaranteed to have 3 elements with 3 unique note names
         const fullTriadPattern = triadVoicing.map(pos => ({ ...pos, note: getNoteName(pos.string, pos.fret) }));
-        
-        // Verify that fullTriadPattern also has 3 unique notes if that's the concern
-        const uniqueNoteNamesInPattern = new Set(fullTriadPattern.map(p => p.note));
-        if (uniqueNoteNamesInPattern.size !== 3) {
-            console.warn(`Mode B: Voicing found for ${randomRoot} ${randomType} Inv ${randomInversion} does not contain 3 unique note names. Pattern:`, fullTriadPattern, "Unique notes:", Array.from(uniqueNoteNamesInPattern));
-            // This might indicate an issue with findTriadVoicingOnFretboard's logic if it's not finding distinct notes of the triad
-            // For now, we'll proceed, but this log helps identify if "duplicated note" means duplicated note *names* in the 3 positions.
-        }
 
 
         const notesInPatternCopy = [...fullTriadPattern];
@@ -478,49 +475,67 @@ document.addEventListener('DOMContentLoaded', () => {
     function findTriadVoicingOnFretboard(rootNote, triadType, inversion = 0) {
         const targetNotes = calculateTriadNotes(rootNote, triadType);
         if (!targetNotes) return null;
-        const notesInOrder = [...targetNotes.slice(inversion), ...targetNotes.slice(0, inversion)];
-        const maxAttemptsOuter = 20;
+        
+        // Ensure we have exactly 3 unique notes for the triad
+        const uniqueTargetNotes = [...new Set(targetNotes)];
+        if (uniqueTargetNotes.length !== 3) {
+            console.warn(`Triad ${rootNote} ${triadType} doesn't have 3 unique notes:`, targetNotes);
+            return null;
+        }
+        
+        const notesInOrder = [...uniqueTargetNotes.slice(inversion), ...uniqueTargetNotes.slice(0, inversion)];
+        const maxAttemptsOuter = 100;
 
         for (let outerAttempt = 0; outerAttempt < maxAttemptsOuter; outerAttempt++) {
-            // Try different starting strings for the lowest note of the (inverted) triad
-            const firstNoteString = Math.floor(Math.random() * currentTuning.length);
+            const firstNoteString = Math.floor(Math.random() * (currentTuning.length - 2));
             const firstNote = notesInOrder[0];
 
-            for (let firstNoteFret = 0; firstNoteFret <= numFrets; firstNoteFret++) {
+            for (let firstNoteFret = 0; firstNoteFret <= numFrets - 4; firstNoteFret++) {
                 if (getNoteName(firstNoteString, firstNoteFret) === firstNote) {
-                    const voicing = [{ string: firstNoteString, fret: firstNoteFret }];
-                    // Try to find the remaining 2 notes on higher strings, within a reasonable fret span
-                    if (notesInOrder.length === 1) return voicing; // Single note (not a triad but handles edge case)
-
-                    // Find second note
+                    // Find second note - must be different note name and on different string
                     const secondNote = notesInOrder[1];
+                    
                     for (let s2 = 0; s2 < currentTuning.length; s2++) {
-                        if (s2 === firstNoteString) continue; // Don't use the same string
-                        for (let f2 = Math.max(0, firstNoteFret - 4); f2 <= Math.min(numFrets, firstNoteFret + 4); f2++) {
+                        if (s2 === firstNoteString) continue; // Different string
+                        for (let f2 = Math.max(0, firstNoteFret - 3); f2 <= Math.min(numFrets, firstNoteFret + 5); f2++) {
                             if (getNoteName(s2, f2) === secondNote) {
-                                const tempVoicing = [...voicing, { string: s2, fret: f2 }];
-                                if (notesInOrder.length === 2) { // Diad found
-                                     // Check fret span for playability if desired
-                                    const frets = tempVoicing.map(n => n.fret);
-                                    if (Math.max(...frets) - Math.min(...frets) <= 4) return tempVoicing;
-                                    continue;
-                                }
-
-                                // Find third note
+                                // Find third note - must be different from both previous notes and on different string
                                 const thirdNote = notesInOrder[2];
+                                
                                 for (let s3 = 0; s3 < currentTuning.length; s3++) {
-                                    if (s3 === firstNoteString || s3 === s2) continue;
-                                    for (let f3 = Math.max(0, firstNoteFret - 4); f3 <= Math.min(numFrets, firstNoteFret + 4); f3++) {
+                                    if (s3 === firstNoteString || s3 === s2) continue; // Different strings
+                                    for (let f3 = Math.max(0, firstNoteFret - 3); f3 <= Math.min(numFrets, firstNoteFret + 5); f3++) {
                                         if (getNoteName(s3, f3) === thirdNote) {
-                                            const finalVoicing = [...tempVoicing, { string: s3, fret: f3 }];
-                                            const frets = finalVoicing.map(n => n.fret);
-                                            // Check overall fret span for playability
-                                            if (Math.max(...frets) - Math.min(...frets) <= 4) {
-                                                // Ensure unique string indices
-                                                const stringIndices = finalVoicing.map(n => n.string);
-                                                if (new Set(stringIndices).size === 3) {
-                                                    return finalVoicing.sort((a,b) => a.string - b.string); // Sort by string for consistency
-                                                }
+                                            const finalVoicing = [
+                                                { string: firstNoteString, fret: firstNoteFret },
+                                                { string: s2, fret: f2 },
+                                                { string: s3, fret: f3 }
+                                            ];
+                                            
+                                            // Verify we have exactly the 3 notes we want
+                                            const noteNames = finalVoicing.map(v => getNoteName(v.string, v.fret));
+                                            const uniqueNotes = new Set(noteNames);
+                                            const frets = finalVoicing.map(v => v.fret);
+                                            const fretSpan = Math.max(...frets) - Math.min(...frets);
+                                            
+                                            // Check for close voicing: interval between lowest and highest note < 12 semitones
+                                            // Calculate actual pitches more accurately
+                                            const pitches = finalVoicing.map(v => {
+                                                const noteIndex = getNoteIndex(getNoteName(v.string, v.fret));
+                                                // Get the pitch of the open string and add fret offset
+                                                const openStringPitch = getNoteIndex(currentTuning[v.string]);
+                                                return openStringPitch + v.fret;
+                                            });
+                                            const pitchSpan = Math.max(...pitches) - Math.min(...pitches);
+                                            
+                                            // Must have exactly 3 unique notes, match our target triad, be playable, and be close voicing
+                                            if (uniqueNotes.size === 3 && 
+                                                noteNames.every(note => uniqueTargetNotes.includes(note)) &&
+                                                uniqueTargetNotes.every(note => noteNames.includes(note)) &&
+                                                fretSpan <= 4 &&
+                                                pitchSpan < 12) { // Close voicing: less than one octave
+                                                console.log(`Found valid close voicing for ${rootNote} ${triadType} Inv ${inversion}: ${noteNames.join(', ')} (pitch span: ${pitchSpan} semitones)`);
+                                                return finalVoicing.sort((a, b) => a.string - b.string);
                                             }
                                         }
                                     }
@@ -531,8 +546,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        console.warn(`Could not find a good voicing for ${rootNote} ${triadType} Inv ${inversion} after ${maxAttemptsOuter} attempts.`);
-        return null; // Fallback if no good voicing found
+        console.warn(`Could not find a close voicing for ${rootNote} ${triadType} Inv ${inversion} after ${maxAttemptsOuter} attempts.`);
+        return null;
     }
 
     function recordQuizAttempt(attempt) {
