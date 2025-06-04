@@ -367,3 +367,11 @@ I have tried the web site you have built. There're some issues need to be fixed:
 2. In mode B, each randomly generated chord should displayed on the page and the triad pattern (3 positions on the fretboard) should also been generated accordingly. But only one of them is displayed on the fretboard and the users is asked to complete the missing 2 positions (notes).
 3. The fretbaord seems not correct. The grid looks ok, but  the Row 0 should represent the first string of a guitar and the Row 5 should represent the sixth string of a guitar. The columns to the left represent lower note zone while the right part of the fretboard should represent high note zone.  
 Now please take a look at these issues and fix them.
+
+
+I found an issue in current implementation. In mode A, any chord that generated in the quiz should be closed voicing rather than open voicing, which means the 3 notes should be close together, and the interval between the lowest and highest note should not be larger or equal to one octave.
+We generate the chord of whether inversion or not (in close voicing) based on the selection of the user.
+
+In the provided screenshot, you can see that the chord is a B Major (consist of B, D# and F#), but the interval betwen the lowest note (D#) and the highest note (F#) already exceeds one octave (i.e. it is a minor tenth). So, from what I can see, it's not a closed chord technically. Possibilities of closed B major chord should be either B -> D# -> F (root position, with intervals major 3rd and minor 3rd); or D# -> F -> B (1st inversion, with intervals minor 3rd and perfect 4th); or F -> B -> D# (2nd inversion, with intervals perfect 4th and major 3rd).
+
+Now, please fix it.

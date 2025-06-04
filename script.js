@@ -464,6 +464,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function getNoteIndex(noteName) { return notes.indexOf(noteName.toUpperCase()); }
     function getNoteFromIndex(index) { return notes[index % notes.length]; }
 
+    // Calculate absolute pitch for proper close voicing validation
+    // Standard guitar tuning pitches (in semitones from C0): E4, B3, G3, D3, A2, E2
+    function getAbsolutePitch(stringIndex, fretIndex) {
+        // Define the absolute pitch of each open string in semitones from C0
+        // Standard tuning: E4(64), B3(59), G3(55), D3(50), A2(45), E2(40)
+        const openStringPitches = [64, 59, 55, 50, 45, 40]; // High E to Low E
+        return openStringPitches[stringIndex] + fretIndex;
+    }
+
     function calculateTriadNotes(rootNote, triadType) {
         const rootIndex = getNoteIndex(rootNote);
         if (rootIndex === -1) return null;
@@ -519,12 +528,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                             const fretSpan = Math.max(...frets) - Math.min(...frets);
                                             
                                             // Check for close voicing: interval between lowest and highest note < 12 semitones
-                                            // Calculate actual pitches more accurately
+                                            // Calculate actual pitches more accurately with proper octave handling
                                             const pitches = finalVoicing.map(v => {
-                                                const noteIndex = getNoteIndex(getNoteName(v.string, v.fret));
-                                                // Get the pitch of the open string and add fret offset
-                                                const openStringPitch = getNoteIndex(currentTuning[v.string]);
-                                                return openStringPitch + v.fret;
+                                                // Calculate absolute pitch considering guitar tuning and octaves
+                                                return getAbsolutePitch(v.string, v.fret);
                                             });
                                             const pitchSpan = Math.max(...pitches) - Math.min(...pitches);
                                             
