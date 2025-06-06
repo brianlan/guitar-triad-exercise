@@ -496,10 +496,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxAttemptsOuter = 100;
 
         for (let outerAttempt = 0; outerAttempt < maxAttemptsOuter; outerAttempt++) {
-            const firstNoteString = Math.floor(Math.random() * (currentTuning.length - 2));
+            const firstNoteString = Math.floor(Math.random() * currentTuning.length);
             const firstNote = notesInOrder[0];
 
-            for (let firstNoteFret = 0; firstNoteFret <= numFrets - 4; firstNoteFret++) {
+            for (let firstNoteFret = 0; firstNoteFret <= numFrets; firstNoteFret++) {
                 if (getNoteName(firstNoteString, firstNoteFret) === firstNote) {
                     // Find second note - must be different note name and on different string
                     const secondNote = notesInOrder[1];
@@ -535,13 +535,25 @@ document.addEventListener('DOMContentLoaded', () => {
                                             });
                                             const pitchSpan = Math.max(...pitches) - Math.min(...pitches);
                                             
-                                            // Must have exactly 3 unique notes, match our target triad, be playable, and be close voicing
+                                            // Verify the inversion is correct by checking the lowest pitched note
+                                            const pitchNoteMap = finalVoicing.map(v => ({
+                                                pitch: getAbsolutePitch(v.string, v.fret),
+                                                note: getNoteName(v.string, v.fret),
+                                                string: v.string,
+                                                fret: v.fret
+                                            }));
+                                            pitchNoteMap.sort((a, b) => a.pitch - b.pitch); // Sort by pitch (low to high)
+                                            const bassNote = pitchNoteMap[0].note; // Lowest pitched note
+                                            const expectedBassNote = notesInOrder[0]; // Expected bass note for this inversion
+                                            
+                                            // Must have exactly 3 unique notes, match our target triad, be playable, be close voicing, and correct inversion
                                             if (uniqueNotes.size === 3 && 
                                                 noteNames.every(note => uniqueTargetNotes.includes(note)) &&
                                                 uniqueTargetNotes.every(note => noteNames.includes(note)) &&
                                                 fretSpan <= 4 &&
-                                                pitchSpan < 12) { // Close voicing: less than one octave
-                                                console.log(`Found valid close voicing for ${rootNote} ${triadType} Inv ${inversion}: ${noteNames.join(', ')} (pitch span: ${pitchSpan} semitones)`);
+                                                pitchSpan < 12 && // Close voicing: less than one octave
+                                                bassNote === expectedBassNote) { // Correct inversion: bass note matches expected
+                                                console.log(`Found valid close voicing for ${rootNote} ${triadType} Inv ${inversion}: ${noteNames.join(', ')} (pitch span: ${pitchSpan} semitones, bass: ${bassNote}) on strings: ${finalVoicing.map(v => v.string + 1).join(', ')}`);
                                                 return finalVoicing.sort((a, b) => a.string - b.string);
                                             }
                                         }
@@ -553,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        console.warn(`Could not find a close voicing for ${rootNote} ${triadType} Inv ${inversion} after ${maxAttemptsOuter} attempts.`);
+        console.warn(`Could not find a close voicing for ${rootNote} ${triadType} Inv ${inversion} after ${maxAttemptsOuter} attempts. Looking for bass note: ${notesInOrder[0]}`);
         return null;
     }
 
