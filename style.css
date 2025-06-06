@@ -240,3 +240,122 @@ h1, h2 {
   50% { transform: translateX(3px); }
   75% { transform: translateX(-3px); }
 }
+
+/* Statistics Styles */
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.stat-item {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    font-size: 1.1em;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 5px;
+}
+
+.stat-item p {
+    margin: 5px 0;
+    font-size: 0.95em;
+}
+
+.clear-stats-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s;
+}
+
+.clear-stats-btn:hover {
+    background-color: #c0392b;
+}
+
+.clear-stats-btn:active {
+    transform: translateY(1px);
+}
+
+/* Review Mode Styles */
+#mode-review {
+    margin-top: 20px;
+}
+
+#review-progress {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    border-left: 4px solid #4CAF50;
+}
+
+#review-progress p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+#review-queue-count, #review-due-count {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+#mode-review-options button {
+    margin: 5px;
+    padding: 10px 15px;
+    background-color: #e9ecef;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+#mode-review-options button:hover {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+#mode-review-options button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#mode-review-feedback.correct {
+    color: #28a745;
+    font-weight: bold;
+}
+
+#mode-review-feedback.incorrect {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+#select-mode-review {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#select-mode-review:hover {
+    background-color: #138496;
+}

@@ -55,8 +55,21 @@
              <button id="mode-b-next">Next Chord</button>
              <div id="mode-b-feedback" class="feedback"></div>
         </div>
+        <div id="mode-review" class="practice-mode-content" style="display: none;"> <!-- Initially hidden -->
+             <h3>Review Mode: Spaced Repetition</h3>
+             <p id="mode-review-instruction">Review triads based on your performance history and spaced repetition algorithm.</p>
+             <div id="mode-review-target">Target: <span>---</span></div>
+             <div id="mode-review-options" class="options-container"></div>
+             <button id="mode-review-next">Next Review</button>
+             <div id="mode-review-feedback" class="feedback"></div>
+             <div id="review-progress">
+                 <p>Review Queue: <span id="review-queue-count">0</span> items</p>
+                 <p>Due Today: <span id="review-due-count">0</span> items</p>
+             </div>
+        </div>
         <button id="select-mode-a">Start Mode A</button>
          <button id="select-mode-b">Start Mode B</button>
+         <button id="select-mode-review">Start Review Mode</button>
     </div>
 
     <div id="stats">

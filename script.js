@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
         triadType: null, // Corrected typo from previous versions
         inversion: 0,
         correctAnswer: null,
-        notesToHighlight: []
+        notesToHighlight: [],
+        startTime: null // Track when question started
     };
     let currentModeBChallenge = { // State for Mode B
         rootNote: null,
@@ -37,7 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
         initialNote: { note: null, string: null, fret: null },
         notesToFind: [], // Note names the user needs to click
         userSelectedNotes: [],
-        isComplete: false
+        isComplete: false,
+        startTime: null // Track when question started
     };
 
     // --- DOM Elements ---
@@ -296,11 +298,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const feedbackContainer = document.getElementById('mode-a-feedback');
         if (!feedbackContainer) return;
         const correct = selectedAnswer === currentModeAChallenge.correctAnswer;
+        const timeTaken = currentModeAChallenge.startTime ? Date.now() - currentModeAChallenge.startTime : 0;
 
         feedbackContainer.textContent = correct ? 'Correct!' : `Incorrect. Answer: ${currentModeAChallenge.correctAnswer}.`;
         feedbackContainer.className = `feedback ${correct ? 'correct' : 'incorrect'}`;
         document.querySelectorAll('#mode-a-options button').forEach(b => b.disabled = true);
-        recordQuizAttempt({ mode: 'A', question: currentModeAChallenge.correctAnswer, answer: selectedAnswer, isCorrect: correct });
+        
+        recordQuizAttempt({ 
+            mode: 'A', 
+            timestamp: Date.now(),
+            questionType: 'identification',
+            question: currentModeAChallenge.correctAnswer, 
+            questionDetails: {
+                rootNote: currentModeAChallenge.rootNote,
+                triadType: currentModeAChallenge.triadType,
+                inversion: currentModeAChallenge.inversion
+            },
+            answer: selectedAnswer, 
+            isCorrect: correct,
+            timeTaken: timeTaken,
+            notesDisplayed: currentModeAChallenge.notesToHighlight
+        });
 
         // Issue 2: Automatically show the next chord after a delay
         setTimeout(() => {
@@ -344,7 +362,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        currentModeAChallenge = { rootNote: randomRoot, triadType: randomType, inversion: randomInversion, correctAnswer: formatChordName(randomRoot, randomType, randomInversion), notesToHighlight: notesToDisplay };
+        currentModeAChallenge = { 
+            rootNote: randomRoot, 
+            triadType: randomType, 
+            inversion: randomInversion, 
+            correctAnswer: formatChordName(randomRoot, randomType, randomInversion), 
+            notesToHighlight: notesToDisplay,
+            startTime: Date.now() // Record start time
+        };
         highlightNotes(notesToDisplay);
         generateModeAOptions(currentModeAChallenge.correctAnswer);
     }
@@ -399,12 +424,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialNoteToShow = notesInPatternCopy.splice(initialNoteIndex, 1)[0];
 
         currentModeBChallenge = {
-            rootNote: randomRoot, triadType: randomType, inversion: randomInversion,
+            rootNote: randomRoot, 
+            triadType: randomType, 
+            inversion: randomInversion,
             targetNotesFull: fullTriadPattern,
             initialNote: initialNoteToShow,
             notesToFind: notesInPatternCopy.map(n => n.note),
             userSelectedNotes: [],
-            isComplete: false
+            isComplete: false,
+            startTime: Date.now() // Record start time
         };
 
         if (targetDisplay) targetDisplay.textContent = formatChordName(randomRoot, randomType, randomInversion);
@@ -439,7 +467,23 @@ document.addEventListener('DOMContentLoaded', () => {
             feedbackContainer.className = 'feedback incorrect';
             // Optionally show all correct notes if ended due to failure/give up
         }
-        recordQuizAttempt({ mode: 'B', questionDetails: {root: currentModeBChallenge.rootNote, type: currentModeBChallenge.triadType}, userAnswers: currentModeBChallenge.userSelectedNotes, isCorrect: success });
+        const timeTaken = currentModeBChallenge.startTime ? Date.now() - currentModeBChallenge.startTime : 0;
+        
+        recordQuizAttempt({ 
+            mode: 'B', 
+            timestamp: Date.now(),
+            questionType: 'completion',
+            questionDetails: {
+                rootNote: currentModeBChallenge.rootNote, 
+                triadType: currentModeBChallenge.triadType,
+                inversion: currentModeBChallenge.inversion
+            }, 
+            userAnswers: currentModeBChallenge.userSelectedNotes, 
+            isCorrect: success,
+            timeTaken: timeTaken,
+            targetNotes: currentModeBChallenge.targetNotesFull,
+            notesToFind: currentModeBChallenge.notesToFind
+        });
     }
 
     function clearHighlights() {
@@ -572,7 +616,169 @@ document.addEventListener('DOMContentLoaded', () => {
     function recordQuizAttempt(attempt) {
         userPerformance.push(attempt);
         console.log('Quiz Attempt Recorded:', attempt, 'Total Attempts:', userPerformance.length);
-        // TODO: Update stats display (Section 3.1)
+        
+        // Save to local storage
+        saveUserPerformanceToStorage();
+        
+        // Update statistics display
+        updateStatisticsDisplay();
+    }
+
+    function saveUserPerformanceToStorage() {
+        try {
+            localStorage.setItem('guitarTriadUserPerformance', JSON.stringify(userPerformance));
+        } catch (error) {
+            console.error('Failed to save user performance to local storage:', error);
+        }
+    }
+
+    function loadUserPerformanceFromStorage() {
+        try {
+            const stored = localStorage.getItem('guitarTriadUserPerformance');
+            if (stored) {
+                userPerformance = JSON.parse(stored);
+                console.log('Loaded user performance from storage:', userPerformance.length, 'attempts');
+            }
+        } catch (error) {
+            console.error('Failed to load user performance from local storage:', error);
+            userPerformance = [];
+        }
+    }
+
+    function updateStatisticsDisplay() {
+        const statsContainer = document.getElementById('stats');
+        if (!statsContainer) return;
+
+        if (userPerformance.length === 0) {
+            statsContainer.innerHTML = '<h2>Statistics</h2><p>No quiz attempts yet. Start practicing to see your statistics!</p>';
+            return;
+        }
+
+        const stats = calculateStatistics();
+        
+        statsContainer.innerHTML = `
+            <h2>Statistics</h2>
+            <div class="stats-overview">
+                <div class="stat-item">
+                    <h3>Overall Performance</h3>
+                    <p>Total Attempts: ${stats.totalAttempts}</p>
+                    <p>Overall Accuracy: ${stats.overallAccuracy}%</p>
+                    <p>Average Response Time: ${stats.averageResponseTime}s</p>
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Accuracy by Triad Type</h3>
+                    ${Object.entries(stats.accuracyByTriadType).map(([type, accuracy]) => 
+                        `<p>${type}: ${accuracy}%</p>`
+                    ).join('')}
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Accuracy by Inversion</h3>
+                    ${Object.entries(stats.accuracyByInversion).map(([inversion, accuracy]) => 
+                        `<p>${getInversionName(inversion)}: ${accuracy}%</p>`
+                    ).join('')}
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Mode Performance</h3>
+                    ${Object.entries(stats.accuracyByMode).map(([mode, accuracy]) => 
+                        `<p>Mode ${mode}: ${accuracy}%</p>`
+                    ).join('')}
+                </div>
+                
+                <div class="stat-item">
+                    <h3>Recent Sessions</h3>
+                    <p>Last 10 attempts: ${stats.recentAccuracy}%</p>
+                    <p>Today's attempts: ${stats.todayAttempts}</p>
+                </div>
+                
+                <div class="stat-item">
+                    <button onclick="clearStatistics()" class="clear-stats-btn">Clear All Statistics</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function calculateStatistics() {
+        const totalAttempts = userPerformance.length;
+        const correctAttempts = userPerformance.filter(attempt => attempt.isCorrect).length;
+        const overallAccuracy = totalAttempts > 0 ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
+        
+        // Calculate average response time (in seconds)
+        const totalTime = userPerformance.reduce((sum, attempt) => sum + (attempt.timeTaken || 0), 0);
+        const averageResponseTime = totalAttempts > 0 ? Math.round((totalTime / totalAttempts) / 100) / 10 : 0;
+        
+        // Accuracy by triad type
+        const accuracyByTriadType = {};
+        ['Major', 'Minor', 'Diminished', 'Augmented'].forEach(type => {
+            const typeAttempts = userPerformance.filter(attempt => 
+                attempt.questionDetails && attempt.questionDetails.triadType === type
+            );
+            const typeCorrect = typeAttempts.filter(attempt => attempt.isCorrect).length;
+            accuracyByTriadType[type] = typeAttempts.length > 0 ? 
+                Math.round((typeCorrect / typeAttempts.length) * 100) : 0;
+        });
+        
+        // Accuracy by inversion
+        const accuracyByInversion = {};
+        [0, 1, 2].forEach(inversion => {
+            const inversionAttempts = userPerformance.filter(attempt => 
+                attempt.questionDetails && attempt.questionDetails.inversion === inversion
+            );
+            const inversionCorrect = inversionAttempts.filter(attempt => attempt.isCorrect).length;
+            accuracyByInversion[inversion] = inversionAttempts.length > 0 ? 
+                Math.round((inversionCorrect / inversionAttempts.length) * 100) : 0;
+        });
+        
+        // Accuracy by mode
+        const accuracyByMode = {};
+        ['A', 'B'].forEach(mode => {
+            const modeAttempts = userPerformance.filter(attempt => attempt.mode === mode);
+            const modeCorrect = modeAttempts.filter(attempt => attempt.isCorrect).length;
+            accuracyByMode[mode] = modeAttempts.length > 0 ? 
+                Math.round((modeCorrect / modeAttempts.length) * 100) : 0;
+        });
+        
+        // Recent performance (last 10 attempts)
+        const recentAttempts = userPerformance.slice(-10);
+        const recentCorrect = recentAttempts.filter(attempt => attempt.isCorrect).length;
+        const recentAccuracy = recentAttempts.length > 0 ? 
+            Math.round((recentCorrect / recentAttempts.length) * 100) : 0;
+        
+        // Today's attempts
+        const today = new Date().toDateString();
+        const todayAttempts = userPerformance.filter(attempt => 
+            new Date(attempt.timestamp).toDateString() === today
+        ).length;
+        
+        return {
+            totalAttempts,
+            overallAccuracy,
+            averageResponseTime,
+            accuracyByTriadType,
+            accuracyByInversion,
+            accuracyByMode,
+            recentAccuracy,
+            todayAttempts
+        };
+    }
+
+    function getInversionName(inversion) {
+        const names = {
+            '0': 'Root Position',
+            '1': '1st Inversion',
+            '2': '2nd Inversion'
+        };
+        return names[inversion] || `Inversion ${inversion}`;
+    }
+
+    function clearStatistics() {
+        if (confirm('Are you sure you want to clear all statistics? This action cannot be undone.')) {
+            userPerformance = [];
+            saveUserPerformanceToStorage();
+            updateStatisticsDisplay();
+        }
     }
 
     // --- Initialization ---
