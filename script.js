@@ -418,6 +418,30 @@ document.addEventListener('DOMContentLoaded', () => {
         // At this point, triadVoicing is guaranteed to have 3 elements with 3 unique note names
         const fullTriadPattern = triadVoicing.map(pos => ({ ...pos, note: getNoteName(pos.string, pos.fret) }));
 
+        // Debug: Verify we have exactly 3 notes
+        if (fullTriadPattern.length !== 3) {
+            console.error(`Mode B: Expected exactly 3 notes in triad pattern, but got ${fullTriadPattern.length}:`, fullTriadPattern);
+            setTimeout(startModeB, 100); // Retry
+            return;
+        }
+
+        // Verify all notes are unique
+        const noteNames = fullTriadPattern.map(n => n.note);
+        const uniqueNoteNames = [...new Set(noteNames)];
+        if (uniqueNoteNames.length !== 3) {
+            console.error(`Mode B: Expected 3 unique note names, but got ${uniqueNoteNames.length}:`, noteNames);
+            setTimeout(startModeB, 100); // Retry
+            return;
+        }
+
+        // Verify all positions are unique (no duplicate string+fret combinations)
+        const positionKeys = fullTriadPattern.map(pos => `${pos.string}-${pos.fret}`);
+        const uniquePositions = [...new Set(positionKeys)];
+        if (uniquePositions.length !== 3) {
+            console.error(`Mode B: Expected 3 unique positions, but got ${uniquePositions.length}:`, positionKeys);
+            setTimeout(startModeB, 100); // Retry
+            return;
+        }
 
         const notesInPatternCopy = [...fullTriadPattern];
         const initialNoteIndex = Math.floor(Math.random() * notesInPatternCopy.length);
@@ -434,6 +458,24 @@ document.addEventListener('DOMContentLoaded', () => {
             isComplete: false,
             startTime: Date.now() // Record start time
         };
+
+        console.log(`Mode B: Starting with ${fullTriadPattern.length} target notes:`, fullTriadPattern.map(n => `${n.note} (S${n.string+1}F${n.fret})`).join(', '));
+        console.log(`Mode B: Initial note: ${initialNoteToShow.note} (S${initialNoteToShow.string+1}F${initialNoteToShow.fret})`);
+        console.log(`Mode B: Notes to find: ${currentModeBChallenge.notesToFind.join(', ')}`);
+        
+        // CRITICAL: Double-check targetNotesFull after assignment
+        console.log(`VERIFICATION: currentModeBChallenge.targetNotesFull has ${currentModeBChallenge.targetNotesFull.length} elements:`);
+        currentModeBChallenge.targetNotesFull.forEach((note, i) => {
+            console.log(`  ${i+1}. ${note.note} at String ${note.string+1}, Fret ${note.fret}`);
+        });
+        
+        if (currentModeBChallenge.targetNotesFull.length !== 3) {
+            console.error(`CRITICAL BUG: targetNotesFull should have 3 elements but has ${currentModeBChallenge.targetNotesFull.length}!`);
+            console.error(`This is the source of the 4-note bug!`);
+            // Force retry to avoid the bug
+            setTimeout(startModeB, 100);
+            return;
+        }
 
         if (targetDisplay) targetDisplay.textContent = formatChordName(randomRoot, randomType, randomInversion);
         if (instructionText) instructionText.textContent = `Complete the ${formatChordName(randomRoot, randomType, randomInversion)}. Find ${currentModeBChallenge.notesToFind.length} more note(s).`;
@@ -455,13 +497,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (success) {
             feedbackContainer.textContent = 'Correct! Triad complete.';
             feedbackContainer.className = 'feedback correct';
-            currentModeBChallenge.targetNotesFull.forEach(notePos => {
-                const fretEl = document.querySelector(`.fret[data-string='${notePos.string}'][data-fret='${notePos.fret}']`);
-                if (fretEl) {
-                    fretEl.classList.remove('highlighted');
-                    fretEl.classList.add('highlighted-correct');
-                }
-            });
+            
+            console.log(`Mode B completion - about to highlight ${currentModeBChallenge.targetNotesFull.length} target notes:`, currentModeBChallenge.targetNotesFull);
+            
+            // Ensure we only highlight exactly the 3 target notes (no duplicates)
+            // targetNotesFull should contain exactly 3 positions
+            if (currentModeBChallenge.targetNotesFull.length === 3) {
+                currentModeBChallenge.targetNotesFull.forEach((notePos, index) => {
+                    console.log(`Highlighting note ${index + 1}: ${notePos.note} at String ${notePos.string + 1}, Fret ${notePos.fret}`);
+                    const fretEl = document.querySelector(`.fret[data-string='${notePos.string}'][data-fret='${notePos.fret}']`);
+                    if (fretEl) {
+                        console.log(`Found fret element for ${notePos.note}, current classes:`, fretEl.className);
+                        fretEl.classList.remove('highlighted', 'highlighted-incorrect');
+                        fretEl.classList.add('highlighted-correct');
+                        console.log(`After highlighting, classes:`, fretEl.className);
+                    } else {
+                        console.error(`Could not find fret element for note ${notePos.note} at S${notePos.string}F${notePos.fret}`);
+                    }
+                });
+            } else {
+                console.error(`Mode B: Expected exactly 3 target notes, but got ${currentModeBChallenge.targetNotesFull.length}:`, currentModeBChallenge.targetNotesFull);
+            }
         } else {
             feedbackContainer.textContent = `Challenge ended. Triad: ${currentModeBChallenge.targetNotesFull.map(n => n.note).join(', ')}.`;
             feedbackContainer.className = 'feedback incorrect';
@@ -531,8 +587,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function findTriadVoicingOnFretboard(rootNote, triadType, inversion = 0) {
+        console.log(`findTriadVoicingOnFretboard called: ${rootNote} ${triadType} Inv ${inversion}`);
         const targetNotes = calculateTriadNotes(rootNote, triadType);
         if (!targetNotes) return null;
+        
+        console.log(`Target notes for ${rootNote} ${triadType}:`, targetNotes);
         
         // Ensure we have exactly 3 unique notes for the triad
         const uniqueTargetNotes = [...new Set(targetNotes)];
@@ -542,6 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const notesInOrder = [...uniqueTargetNotes.slice(inversion), ...uniqueTargetNotes.slice(0, inversion)];
+        console.log(`Notes in order for inversion ${inversion}:`, notesInOrder);
         const maxAttemptsOuter = 100;
 
         for (let outerAttempt = 0; outerAttempt < maxAttemptsOuter; outerAttempt++) {
@@ -570,11 +630,29 @@ document.addEventListener('DOMContentLoaded', () => {
                                                 { string: s3, fret: f3 }
                                             ];
                                             
+                                            console.log(`Testing voicing: ${rootNote} ${triadType} Inv ${inversion}`);
+                                            console.log(`Raw finalVoicing (${finalVoicing.length} elements):`, finalVoicing);
+                                            
                                             // Verify we have exactly the 3 notes we want
                                             const noteNames = finalVoicing.map(v => getNoteName(v.string, v.fret));
+                                            console.log(`Note names from positions:`, noteNames);
+                                            
                                             const uniqueNotes = new Set(noteNames);
+                                            console.log(`Unique notes (${uniqueNotes.size}):`, [...uniqueNotes]);
+                                            
                                             const frets = finalVoicing.map(v => v.fret);
                                             const fretSpan = Math.max(...frets) - Math.min(...frets);
+                                            
+                                            // Check for duplicate positions
+                                            const positionStrings = finalVoicing.map(v => `S${v.string}F${v.fret}`);
+                                            const uniquePositions = [...new Set(positionStrings)];
+                                            console.log(`Position strings:`, positionStrings);
+                                            console.log(`Unique positions (${uniquePositions.length}):`, uniquePositions);
+                                            
+                                            if (uniquePositions.length !== 3) {
+                                                console.error(`DUPLICATE POSITIONS DETECTED! Expected 3 unique positions, got ${uniquePositions.length}`);
+                                                continue; // Skip this voicing
+                                            }
                                             
                                             // Check for close voicing: interval between lowest and highest note < 12 semitones
                                             // Calculate actual pitches more accurately with proper octave handling
@@ -602,8 +680,33 @@ document.addEventListener('DOMContentLoaded', () => {
                                                 fretSpan <= 4 &&
                                                 pitchSpan < 12 && // Close voicing: less than one octave
                                                 bassNote === expectedBassNote) { // Correct inversion: bass note matches expected
-                                                console.log(`Found valid close voicing for ${rootNote} ${triadType} Inv ${inversion}: ${noteNames.join(', ')} (pitch span: ${pitchSpan} semitones, bass: ${bassNote}) on strings: ${finalVoicing.map(v => v.string + 1).join(', ')}`);
-                                                return finalVoicing.sort((a, b) => a.string - b.string);
+                                                
+                                                console.log(`✓ VALID VOICING FOUND!`);
+                                                console.log(`  Notes: ${noteNames.join(', ')}`);
+                                                console.log(`  Positions: ${finalVoicing.map(v => `S${v.string+1}F${v.fret}`).join(', ')}`);
+                                                console.log(`  Fret span: ${fretSpan}, Pitch span: ${pitchSpan}`);
+                                                console.log(`  Bass note: ${bassNote}, Expected: ${expectedBassNote}`);
+                                                
+                                                const sortedFinalVoicing = finalVoicing.sort((a, b) => a.string - b.string);
+                                                console.log(`Final voicing being returned (${sortedFinalVoicing.length} notes):`, sortedFinalVoicing);
+                                                
+                                                // Final verification before return
+                                                if (sortedFinalVoicing.length !== 3) {
+                                                    console.error(`CRITICAL ERROR: About to return ${sortedFinalVoicing.length} notes instead of 3!`);
+                                                    return null;
+                                                }
+                                                
+                                                return sortedFinalVoicing;
+                                            } else {
+                                                console.log(`✗ Voicing rejected:`, {
+                                                    uniqueNotesSize: uniqueNotes.size,
+                                                    hasAllTargetNotes: noteNames.every(note => uniqueTargetNotes.includes(note)),
+                                                    targetHasAllNotes: uniqueTargetNotes.every(note => noteNames.includes(note)),
+                                                    fretSpanOk: fretSpan <= 4,
+                                                    pitchSpanOk: pitchSpan < 12,
+                                                    bassNoteOk: bassNote === expectedBassNote,
+                                                    bassNote, expectedBassNote
+                                                });
                                             }
                                         }
                                     }
