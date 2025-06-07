@@ -1,0 +1,51 @@
+{
+  "name": "guitar-triad-exercise",
+  "version": "2.0.0",
+  "description": "Interactive guitar fretboard triad practice tool with chord identification and completion exercises",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "test:browser": "echo 'Open tests/index.html in your browser to run browser tests'",
+    "start": "echo 'Open index.html in your browser to start the application'",
+    "dev": "python3 -m http.server 8000",
+    "lint": "echo 'No linter configured yet'",
+    "build": "echo 'No build process needed for this client-side application'"
+  },
+  "keywords": [
+    "guitar",
+    "music",
+    "education",
+    "triad",
+    "chord",
+    "fretboard",
+    "practice",
+    "music-theory"
+  ],
+  "author": "Guitar Triad App Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "bugs": {
+    "url": "https://github.com/your-repo/guitar-triad-exercise/issues"
+  },
+  "homepage": ".",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {},
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "files": [
+    "src/",
+    "index.html",
+    "style.css",
+    "README.md"
+  ]
+}

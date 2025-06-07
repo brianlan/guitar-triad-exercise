@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Module Test</title>
+</head>
+<body>
+    <h1>Minimal Module Test</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        import { TriadGenerator } from './src/core/TriadGenerator.js';
+        import { STANDARD_TUNING, VOICING_CONSTRAINTS } from './src/utils/Constants.js';
+        import { MusicUtils } from './src/utils/MusicUtils.js';
+        
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            console.log(message);
+            output.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        try {
+            log('Testing basic functionality...');
+            
+            // Test MusicUtils first
+            const cMajorNotes = MusicUtils.calculateTriadNotes('C', 'Major');
+            log('C Major notes: ' + JSON.stringify(cMajorNotes));
+            
+            const noteName = MusicUtils.getNoteName(5, 8, STANDARD_TUNING);
+            log('Note at string 5, fret 8: ' + noteName);
+            
+            // Test TriadGenerator creation
+            const generator = new TriadGenerator(STANDARD_TUNING, 12);
+            log('TriadGenerator created successfully');
+            log('Tuning: ' + JSON.stringify(generator.tuning));
+            log('NumFrets: ' + generator.numFrets);
+            
+            // Test generateTriadNotes
+            const generated = generator.generateTriadNotes('C', 'Major', 0);
+            log('Generated triad notes: ' + JSON.stringify(generated));
+            
+            // Test VOICING_CONSTRAINTS
+            log('VOICING_CONSTRAINTS: ' + JSON.stringify(VOICING_CONSTRAINTS));
+            
+            // Now test voicing generation with very detailed logging
+            log('--- Testing voicing generation ---');
+            
+            const voicings = generator.findMultipleVoicings('G', 'Major', 0, 1);
+            log('G Major voicings: ' + JSON.stringify(voicings, null, 2));
+            
+            if (!voicings || voicings.length === 0) {
+                log('No voicings found - testing alternative method...');
+                const altVoicings = generator.findTriadVoicingsOnFretboard('G', 'Major', 0, STANDARD_TUNING, 12, 1);
+                log('Alternative method result: ' + JSON.stringify(altVoicings, null, 2));
+            }
+            
+        } catch (error) {
+            log('ERROR: ' + error.message);
+            log('Stack: ' + error.stack);
+        }
+    </script>
+</body>
+</html>

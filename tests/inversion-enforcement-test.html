@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inversion Enforcement Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        #results { margin-top: 20px; }
+        .summary {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .test-case {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background: white;
+        }
+        .test-case h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .details {
+            font-family: monospace;
+            font-size: 12px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Guitar Triad App - Inversion Enforcement Test</h1>
+    <p>This test verifies that Mode A and Mode B strictly respect user-selected inversions.</p>
+    
+    <div>
+        <button onclick="runComprehensiveTest()">Run Comprehensive Test</button>
+        <button onclick="runEdgeCaseTest()">Run Edge Case Test</button>
+        <button onclick="runStressTest()">Run Stress Test (100 iterations)</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script type="module">
+        import { TriadGenerator } from '../src/core/TriadGenerator.js';
+        import { ModeA } from '../src/modes/ModeA.js';
+        import { ModeB } from '../src/modes/ModeB.js';
+        import { MusicUtils } from '../src/utils/MusicUtils.js';
+        import { NOTES, TRIAD_TYPES, STANDARD_TUNING } from '../src/utils/Constants.js';
+
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function logDetails(details) {
+            const div = document.createElement('div');
+            div.className = 'details';
+            div.innerHTML = details;
+            resultsDiv.appendChild(div);
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        function getInversionName(inversion) {
+            switch(inversion) {
+                case 0: return 'Root Position';
+                case 1: return '1st Inversion';
+                case 2: return '2nd Inversion';
+                default: return `Inversion ${inversion}`;
+            }
+        }
+
+        function getExpectedBassNote(rootNote, triadType, inversion) {
+            const generator = new TriadGenerator();
+            const triadNotes = generator.generateTriadNotes(rootNote, triadType, inversion);
+            return triadNotes[0]; // Bass note is always the first note in the inversion
+        }
+
+        function analyzeVoicing(voicing, rootNote, triadType, expectedInversion) {
+            if (!voicing || voicing.length !== 3) {
+                return { valid: false, reason: 'Invalid voicing structure' };
+            }
+
+            // Get the actual bass note (lowest fret on the lowest string)
+            const bassNote = voicing.reduce((lowest, note) => {
+                if (note.string > lowest.string || 
+                    (note.string === lowest.string && note.fret < lowest.fret)) {
+                    return note;
+                }
+                return lowest;
+            });
+
+            const expectedBassNote = getExpectedBassNote(rootNote, triadType, expectedInversion);
+            const actualBassNote = MusicUtils.getNoteAtFret(STANDARD_TUNING[bassNote.string], bassNote.fret);
+            
+            // Normalize notes for comparison (handle enharmonics)
+            const normalizedExpected = MusicUtils.normalizeNote(expectedBassNote);
+            const normalizedActual = MusicUtils.normalizeNote(actualBassNote);
+
+            const matches = normalizedExpected === normalizedActual;
+
+            return {
+                valid: matches,
+                reason: matches ? 'Correct inversion' : 
+                       `Expected bass note ${expectedBassNote}, got ${actualBassNote}`,
+                expectedBass: expectedBassNote,
+                actualBass: actualBassNote,
+                bassPosition: `String ${bassNote.string + 1}, Fret ${bassNote.fret}`,
+                voicingDetails: voicing.map(n => 
+                    `String ${n.string + 1}, Fret ${n.fret} (${MusicUtils.getNoteAtFret(STANDARD_TUNING[n.string], n.fret)})`
+                ).join('; ')
+            };
+        }
+
+        async function testInversionEnforcement(rootNote, triadType, selectedInversions, iterations = 10) {
+            const generator = new TriadGenerator();
+            const testResults = [];
+            
+            for (let i = 0; i < iterations; i++) {
+                try {
+                    const voicing = generator.findTriadVoicingsOnFretboard(
+                        rootNote, 
+                        triadType, 
+                        selectedInversions[0], // Use first selected inversion
+                        STANDARD_TUNING, 
+                        12
+                    )[0]; // Get first valid voicing
+
+                    if (!voicing) {
+                        testResults.push({
+                            iteration: i + 1,
+                            success: false,
+                            reason: 'No voicing found',
+                            voicing: null
+                        });
+                        continue;
+                    }
+
+                    const analysis = analyzeVoicing(voicing, rootNote, triadType, selectedInversions[0]);
+                    
+                    testResults.push({
+                        iteration: i + 1,
+                        success: analysis.valid,
+                        reason: analysis.reason,
+                        voicing: voicing,
+                        analysis: analysis
+                    });
+
+                } catch (error) {
+                    testResults.push({
+                        iteration: i + 1,
+                        success: false,
+                        reason: `Error: ${error.message}`,
+                        voicing: null,
+                        error: error
+                    });
+                }
+            }
+
+            return testResults;
+        }
+
+        window.runComprehensiveTest = async function() {
+            log('Starting Comprehensive Inversion Enforcement Test...', 'info');
+            
+            const testCases = [
+                { root: 'C', type: 'Major', inversions: [0] },
+                { root: 'C', type: 'Major', inversions: [1] },
+                { root: 'C', type: 'Major', inversions: [2] },
+                { root: 'G', type: 'Minor', inversions: [0] },
+                { root: 'G', type: 'Minor', inversions: [1] },
+                { root: 'F#', type: 'Major', inversions: [0] },
+                { root: 'C#', type: 'Major', inversions: [0] }, // Edge case from bug report
+                { root: 'Bb', type: 'Minor', inversions: [2] },
+                { root: 'D', type: 'Diminished', inversions: [1] },
+                { root: 'A', type: 'Augmented', inversions: [0] }
+            ];
+
+            let totalTests = 0;
+            let totalPassed = 0;
+            let failedCases = [];
+
+            for (const testCase of testCases) {
+                const caseDiv = document.createElement('div');
+                caseDiv.className = 'test-case';
+                
+                const header = document.createElement('h4');
+                header.innerHTML = `Testing: ${testCase.root} ${testCase.type} - ${getInversionName(testCase.inversions[0])}`;
+                caseDiv.appendChild(header);
+
+                const results = await testInversionEnforcement(
+                    testCase.root, 
+                    testCase.type, 
+                    testCase.inversions, 
+                    5
+                );
+
+                const passed = results.filter(r => r.success).length;
+                const total = results.length;
+                totalTests += total;
+                totalPassed += passed;
+
+                const resultText = document.createElement('p');
+                resultText.innerHTML = `Results: ${passed}/${total} passed`;
+                resultText.className = passed === total ? 'pass' : 'fail';
+                caseDiv.appendChild(resultText);
+
+                if (passed !== total) {
+                    failedCases.push({
+                        testCase,
+                        results: results.filter(r => !r.success)
+                    });
+
+                    const failDetails = document.createElement('div');
+                    failDetails.innerHTML = '<strong>Failures:</strong>';
+                    results.filter(r => !r.success).forEach(result => {
+                        failDetails.innerHTML += `<br>Iteration ${result.iteration}: ${result.reason}`;
+                        if (result.analysis) {
+                            failDetails.innerHTML += `<br>&nbsp;&nbsp;Expected: ${result.analysis.expectedBass}, Got: ${result.analysis.actualBass}`;
+                            failDetails.innerHTML += `<br>&nbsp;&nbsp;Voicing: ${result.analysis.voicingDetails}`;
+                        }
+                    });
+                    caseDiv.appendChild(failDetails);
+                }
+
+                resultsDiv.appendChild(caseDiv);
+            }
+
+            // Summary
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'summary';
+            summaryDiv.innerHTML = `
+                <h3>Comprehensive Test Summary</h3>
+                <p>Total Tests: ${totalTests}</p>
+                <p>Passed: ${totalPassed}</p>
+                <p>Failed: ${totalTests - totalPassed}</p>
+                <p>Success Rate: ${((totalPassed / totalTests) * 100).toFixed(1)}%</p>
+            `;
+            resultsDiv.appendChild(summaryDiv);
+
+            if (failedCases.length > 0) {
+                log(`❌ Test completed with ${failedCases.length} failed test cases`, 'fail');
+            } else {
+                log('✅ All comprehensive tests passed!', 'pass');
+            }
+        };
+
+        window.runEdgeCaseTest = async function() {
+            log('Starting Edge Case Test...', 'info');
+            
+            // Test specific edge cases that might cause issues
+            const edgeCases = [
+                { root: 'C#', type: 'Major', inversions: [0], description: 'C# Major Root (sharp root)' },
+                { root: 'Db', type: 'Major', inversions: [0], description: 'Db Major Root (flat root)' },
+                { root: 'F#', type: 'Minor', inversions: [1], description: 'F# Minor 1st Inversion' },
+                { root: 'Gb', type: 'Minor', inversions: [1], description: 'Gb Minor 1st Inversion' },
+                { root: 'B', type: 'Diminished', inversions: [2], description: 'B Diminished 2nd Inversion' },
+                { root: 'C', type: 'Augmented', inversions: [1], description: 'C Augmented 1st Inversion' }
+            ];
+
+            let totalPassed = 0;
+            let totalTests = edgeCases.length * 3; // 3 iterations per case
+
+            for (const edgeCase of edgeCases) {
+                const results = await testInversionEnforcement(
+                    edgeCase.root,
+                    edgeCase.type,
+                    edgeCase.inversions,
+                    3
+                );
+
+                const passed = results.filter(r => r.success).length;
+                totalPassed += passed;
+
+                if (passed === 3) {
+                    log(`✅ ${edgeCase.description}: All 3/3 tests passed`, 'pass');
+                } else {
+                    log(`❌ ${edgeCase.description}: Only ${passed}/3 tests passed`, 'fail');
+                    logDetails(`Failures: ${results.filter(r => !r.success).map(r => r.reason).join(', ')}`);
+                }
+            }
+
+            const successRate = ((totalPassed / totalTests) * 100).toFixed(1);
+            log(`Edge Case Test Summary: ${totalPassed}/${totalTests} passed (${successRate}%)`, 
+                totalPassed === totalTests ? 'pass' : 'fail');
+        };
+
+        window.runStressTest = async function() {
+            log('Starting Stress Test (100 iterations)...', 'info');
+            
+            // Focus on the most problematic case from the original bug report
+            const results = await testInversionEnforcement('C#', 'Major', [0], 100);
+            
+            const passed = results.filter(r => r.success).length;
+            const failed = results.filter(r => !r.success);
+            
+            log(`Stress Test Results: ${passed}/100 passed`, passed === 100 ? 'pass' : 'fail');
+            
+            if (failed.length > 0) {
+                const failureReasons = {};
+                failed.forEach(f => {
+                    failureReasons[f.reason] = (failureReasons[f.reason] || 0) + 1;
+                });
+                
+                logDetails(`Failure breakdown: ${JSON.stringify(failureReasons, null, 2)}`);
+                
+                // Show details of first few failures
+                const sampleFailures = failed.slice(0, 3);
+                sampleFailures.forEach(failure => {
+                    if (failure.analysis) {
+                        logDetails(`Sample failure - Expected: ${failure.analysis.expectedBass}, Got: ${failure.analysis.actualBass}`);
+                        logDetails(`Voicing: ${failure.analysis.voicingDetails}`);
+                    }
+                });
+            }
+        };
+
+        // Auto-run basic test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Inversion Enforcement Test Suite Loaded', 'info');
+            log('Click buttons above to run different test scenarios', 'info');
+        });
+    </script>
+</body>
+</html>

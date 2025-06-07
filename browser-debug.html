@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Debug - TriadGenerator</title>
+</head>
+<body>
+    <h1>Browser Debug - TriadGenerator</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        import { TriadGenerator } from './src/core/TriadGenerator.js';
+        import { STANDARD_TUNING } from './src/utils/Constants.js';
+        import { MusicUtils } from './src/utils/MusicUtils.js';
+        
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            console.log(message);
+            output.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        try {
+            log('Starting browser debug...');
+            
+            // Check if MusicUtils is working
+            log('Testing MusicUtils...');
+            const notes = MusicUtils.calculateTriadNotes('C', 'Major');
+            log('C Major notes: ' + JSON.stringify(notes));
+            
+            // Check if Constants are loaded
+            log('STANDARD_TUNING: ' + JSON.stringify(STANDARD_TUNING));
+            
+            // Create TriadGenerator instance
+            log('Creating TriadGenerator...');
+            const generator = new TriadGenerator();
+            log('Generator created successfully');
+            
+            // Set properties explicitly
+            generator.tuning = STANDARD_TUNING;
+            generator.numFrets = 12;
+            log('Tuning set: ' + JSON.stringify(generator.tuning));
+            log('NumFrets set: ' + generator.numFrets);
+            
+            // Test generateTriadNotes
+            log('Testing generateTriadNotes...');
+            const triadNotes = generator.generateTriadNotes('C', 'Major', 0);
+            log('Generated triad notes: ' + JSON.stringify(triadNotes));
+            
+            // Test findMultipleVoicings
+            log('Testing findMultipleVoicings...');
+            const voicings = generator.findMultipleVoicings('C', 'Major', 0, 3);
+            log('Voicings result: ' + JSON.stringify(voicings, null, 2));
+            log('Voicings array? ' + Array.isArray(voicings));
+            log('Voicings length: ' + (voicings ? voicings.length : 'null/undefined'));
+            
+            if (voicings && voicings.length > 0) {
+                log('First voicing: ' + JSON.stringify(voicings[0]));
+            } else {
+                log('ERROR: No voicings found!');
+                
+                // Test with a simpler case
+                log('Testing with different parameters...');
+                try {
+                    const simpleVoicings = generator.findMultipleVoicings('C', 'Major', 0, 1);
+                    log('Simple voicings (max 1): ' + JSON.stringify(simpleVoicings));
+                    
+                    // Test with different chord
+                    const gVoicings = generator.findMultipleVoicings('G', 'Major', 0, 1);
+                    log('G Major voicings: ' + JSON.stringify(gVoicings));
+                    
+                    // Test findTriadVoicingsOnFretboard
+                    const altVoicings = generator.findTriadVoicingsOnFretboard('C', 'Major', 0, STANDARD_TUNING, 12, 1);
+                    log('Alt method voicings: ' + JSON.stringify(altVoicings));
+                    
+                } catch (debugError) {
+                    log('Debug error: ' + debugError.message);
+                    log('Debug error stack: ' + debugError.stack);
+                }
+            }
+            
+        } catch (error) {
+            log('ERROR: ' + error.message);
+            log('Stack: ' + error.stack);
+        }
+    </script>
+</body>
+</html>

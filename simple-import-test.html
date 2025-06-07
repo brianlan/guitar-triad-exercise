@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Import Test</title>
+</head>
+<body>
+    <h1>Simple Import Test</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            console.log(message);
+            output.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        try {
+            log('Testing imports...');
+            
+            // Test Constants import
+            const constantsModule = await import('./src/utils/Constants.js');
+            log('Constants imported: ' + Object.keys(constantsModule).join(', '));
+            log('STANDARD_TUNING: ' + JSON.stringify(constantsModule.STANDARD_TUNING));
+            log('VOICING_CONSTRAINTS: ' + JSON.stringify(constantsModule.VOICING_CONSTRAINTS));
+            
+            // Test MusicUtils import
+            const musicUtilsModule = await import('./src/utils/MusicUtils.js');
+            log('MusicUtils imported: ' + Object.keys(musicUtilsModule).join(', '));
+            
+            // Test MusicUtils function
+            const notes = musicUtilsModule.MusicUtils.calculateTriadNotes('C', 'Major');
+            log('C Major notes: ' + JSON.stringify(notes));
+            
+            // Test TriadGenerator import
+            const triadGeneratorModule = await import('./src/core/TriadGenerator.js');
+            log('TriadGenerator imported: ' + Object.keys(triadGeneratorModule).join(', '));
+            
+            // Create instance with explicit parameters
+            const generator = new triadGeneratorModule.TriadGenerator(constantsModule.STANDARD_TUNING, 12);
+            log('Generator created with explicit params');
+            
+            // Test the function step by step
+            log('Calling generateTriadNotes...');
+            const triadNotes = generator.generateTriadNotes('C', 'Major', 0);
+            log('Generated triad notes: ' + JSON.stringify(triadNotes));
+            
+            log('Calling findMultipleVoicings...');
+            const voicings = generator.findMultipleVoicings('C', 'Major', 0, 1);
+            log('Voicings result: ' + JSON.stringify(voicings, null, 2));
+            
+        } catch (error) {
+            log('ERROR: ' + error.message);
+            log('Stack: ' + error.stack);
+        }
+    </script>
+</body>
+</html>

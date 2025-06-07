@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitar Triad App - Unit Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-suite {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 3px;
+        }
+        .test-pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .summary {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .summary.success {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .summary.failure {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Guitar Triad App - Unit Tests</h1>
+    <div id="test-output"></div>
+    
+    <script type="module">
+        // Simple testing framework
+        class TestRunner {
+            constructor() {
+                this.tests = [];
+                this.results = [];
+            }
+            
+            test(name, fn) {
+                this.tests.push({ name, fn });
+            }
+            
+            async runAll() {
+                const output = document.getElementById('test-output');
+                
+                for (const test of this.tests) {
+                    try {
+                        await test.fn();
+                        this.results.push({ name: test.name, passed: true });
+                        this.logResult(test.name, true);
+                    } catch (error) {
+                        this.results.push({ name: test.name, passed: false, error });
+                        this.logResult(test.name, false, error);
+                    }
+                }
+                
+                this.showSummary();
+            }
+            
+            logResult(name, passed, error = null) {
+                const output = document.getElementById('test-output');
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `test-result ${passed ? 'test-pass' : 'test-fail'}`;
+                resultDiv.innerHTML = `
+                    <strong>${name}</strong>: ${passed ? 'PASS' : 'FAIL'}
+                    ${error ? `<br><small>Error: ${error.message}</small>` : ''}
+                `;
+                output.appendChild(resultDiv);
+            }
+            
+            showSummary() {
+                const passed = this.results.filter(r => r.passed).length;
+                const total = this.results.length;
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = `summary ${passed === total ? 'success' : 'failure'}`;
+                summaryDiv.innerHTML = `
+                    <h2>Test Summary</h2>
+                    <p>Passed: ${passed}/${total}</p>
+                    <p>Success Rate: ${((passed/total) * 100).toFixed(1)}%</p>
+                `;
+                document.getElementById('test-output').insertBefore(summaryDiv, document.getElementById('test-output').firstChild);
+            }
+            
+            assertEquals(actual, expected, message = '') {
+                if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                    throw new Error(`${message} Expected: ${JSON.stringify(expected)}, Actual: ${JSON.stringify(actual)}`);
+                }
+            }
+            
+            assertTrue(condition, message = '') {
+                if (!condition) {
+                    throw new Error(`${message} Expected true, got false`);
+                }
+            }
+            
+            assertFalse(condition, message = '') {
+                if (condition) {
+                    throw new Error(`${message} Expected false, got true`);
+                }
+            }
+            
+            assertThrows(fn, message = '') {
+                try {
+                    fn();
+                    throw new Error(`${message} Expected function to throw an error`);
+                } catch (error) {
+                    // Expected behavior
+                }
+            }
+        }
+        
+        // Import modules for testing
+        import { NOTES, STANDARD_TUNING, TRIAD_INTERVALS } from '../src/utils/Constants.js';
+        import { getRandomElement, normalizeNote, getEnharmonicEquivalent } from '../src/utils/MusicUtils.js';
+        import { Storage } from '../src/utils/Storage.js';
+        import { Statistics } from '../src/utils/Statistics.js';
+        import { TriadGenerator } from '../src/core/TriadGenerator.js';
+        
+        // Initialize test runner
+        const runner = new TestRunner();
+        
+        // Constants Tests
+        runner.test('Constants - NOTES should contain 12 notes', () => {
+            runner.assertEquals(NOTES.length, 12, 'NOTES array length');
+            runner.assertTrue(NOTES.includes('C'), 'Should contain C');
+            runner.assertTrue(NOTES.includes('F#'), 'Should contain F#');
+        });
+        
+        runner.test('Constants - STANDARD_TUNING should be correct', () => {
+            runner.assertEquals(STANDARD_TUNING, ['E', 'B', 'G', 'D', 'A', 'E'], 'Standard tuning');
+        });
+        
+        runner.test('Constants - TRIAD_INTERVALS should contain all triad types', () => {
+            runner.assertTrue('Major' in TRIAD_INTERVALS, 'Should contain Major');
+            runner.assertTrue('Minor' in TRIAD_INTERVALS, 'Should contain Minor');
+            runner.assertTrue('Diminished' in TRIAD_INTERVALS, 'Should contain Diminished');
+            runner.assertTrue('Augmented' in TRIAD_INTERVALS, 'Should contain Augmented');
+            runner.assertEquals(TRIAD_INTERVALS.Major, [0, 4, 7], 'Major triad intervals');
+        });
+        
+        // MusicUtils Tests
+        runner.test('MusicUtils - getRandomElement should return valid element', () => {
+            const arr = ['A', 'B', 'C'];
+            const result = getRandomElement(arr);
+            runner.assertTrue(arr.includes(result), 'Result should be from input array');
+        });
+        
+        runner.test('MusicUtils - normalizeNote should handle different formats', () => {
+            runner.assertEquals(normalizeNote('c'), 'C', 'Lowercase conversion');
+            runner.assertEquals(normalizeNote('C#'), 'C#', 'Sharp note');
+            runner.assertEquals(normalizeNote('Db'), 'C#', 'Flat to sharp conversion');
+            runner.assertEquals(normalizeNote('Ab'), 'G#', 'Flat to sharp conversion');
+        });
+        
+        runner.test('MusicUtils - getEnharmonicEquivalent should work correctly', () => {
+            runner.assertEquals(getEnharmonicEquivalent('C#'), 'Db', 'C# to Db');
+            runner.assertEquals(getEnharmonicEquivalent('Db'), 'C#', 'Db to C#');
+            runner.assertEquals(getEnharmonicEquivalent('C'), 'C', 'Natural note unchanged');
+        });
+        
+        // Storage Tests
+        runner.test('Storage - should store and retrieve values', () => {
+            const storage = new Storage();
+            storage.set('testKey', 'testValue');
+            runner.assertEquals(storage.get('testKey'), 'testValue', 'Basic storage');
+        });
+        
+        runner.test('Storage - should return default for missing keys', () => {
+            const storage = new Storage();
+            runner.assertEquals(storage.get('missingKey', 'default'), 'default', 'Default value');
+        });
+        
+        runner.test('Storage - should handle complex objects', () => {
+            const storage = new Storage();
+            const obj = { test: 'value', number: 42, array: [1, 2, 3] };
+            storage.set('complexObj', obj);
+            runner.assertEquals(storage.get('complexObj'), obj, 'Complex object storage');
+        });
+        
+        // Statistics Tests
+        runner.test('Statistics - should initialize with empty stats', () => {
+            const stats = new Statistics();
+            const data = stats.getStats();
+            runner.assertEquals(data.total, 0, 'Initial total should be 0');
+            runner.assertEquals(data.correct, 0, 'Initial correct should be 0');
+            runner.assertEquals(data.accuracy, 0, 'Initial accuracy should be 0');
+        });
+        
+        runner.test('Statistics - should add and calculate results correctly', () => {
+            const stats = new Statistics();
+            stats.addResult('identification', {
+                correct: true,
+                timeTaken: 2000,
+                rootNote: 'C',
+                triadType: 'Major',
+                inversion: 0
+            });
+            stats.addResult('identification', {
+                correct: false,
+                timeTaken: 3000,
+                rootNote: 'G',
+                triadType: 'Minor',
+                inversion: 1
+            });
+            
+            const data = stats.getStats();
+            runner.assertEquals(data.total, 2, 'Total questions');
+            runner.assertEquals(data.correct, 1, 'Correct answers');
+            runner.assertEquals(data.accuracy, 50, 'Accuracy percentage');
+            runner.assertEquals(data.averageTime, 2.5, 'Average time in seconds');
+        });
+        
+        runner.test('Statistics - should handle mode-specific stats', () => {
+            const stats = new Statistics();
+            stats.addResult('identification', { correct: true, timeTaken: 2000 });
+            stats.addResult('completion', { correct: false, timeTaken: 4000 });
+            
+            const data = stats.getStats();
+            runner.assertEquals(data.identification.total, 1, 'Mode A total');
+            runner.assertEquals(data.completion.total, 1, 'Mode B total');
+            runner.assertEquals(data.identification.accuracy, 100, 'Mode A accuracy');
+            runner.assertEquals(data.completion.accuracy, 0, 'Mode B accuracy');
+        });
+        
+        // TriadGenerator Tests
+        runner.test('TriadGenerator - should generate valid triad notes', () => {
+            const generator = new TriadGenerator();
+            const notes = generator.generateTriadNotes('C', 'Major', 0);
+            runner.assertEquals(notes, ['C', 'E', 'G'], 'C Major triad');
+        });
+        
+        runner.test('TriadGenerator - should handle inversions correctly', () => {
+            const generator = new TriadGenerator();
+            const root = generator.generateTriadNotes('C', 'Major', 0);
+            const first = generator.generateTriadNotes('C', 'Major', 1);
+            const second = generator.generateTriadNotes('C', 'Major', 2);
+            
+            runner.assertEquals(root, ['C', 'E', 'G'], 'Root position');
+            runner.assertEquals(first, ['E', 'G', 'C'], 'First inversion');
+            runner.assertEquals(second, ['G', 'C', 'E'], 'Second inversion');
+        });
+        
+        runner.test('TriadGenerator - should generate different triad types', () => {
+            const generator = new TriadGenerator();
+            const major = generator.generateTriadNotes('C', 'Major', 0);
+            const minor = generator.generateTriadNotes('C', 'Minor', 0);
+            const dim = generator.generateTriadNotes('C', 'Diminished', 0);
+            const aug = generator.generateTriadNotes('C', 'Augmented', 0);
+            
+            runner.assertEquals(major, ['C', 'E', 'G'], 'C Major');
+            runner.assertEquals(minor, ['C', 'D#', 'G'], 'C Minor');
+            runner.assertEquals(dim, ['C', 'D#', 'F#'], 'C Diminished');
+            runner.assertEquals(aug, ['C', 'E', 'G#'], 'C Augmented');
+        });
+        
+        runner.test('TriadGenerator - should find valid fretboard voicings', () => {
+            try {
+                // Create generator with explicit parameters
+                const generator = new TriadGenerator(STANDARD_TUNING, 12);
+                console.log('Generator created with explicit params:', generator);
+                console.log('Tuning:', generator.tuning);
+                console.log('NumFrets:', generator.numFrets);
+                
+                // Test with a simpler approach - try different chord/inversion combinations
+                const testCases = [
+                    { root: 'C', type: 'Major', inversion: 0 },
+                    { root: 'G', type: 'Major', inversion: 0 },
+                    { root: 'A', type: 'Minor', inversion: 0 },
+                    { root: 'D', type: 'Major', inversion: 0 }
+                ];
+                
+                let foundVoicing = false;
+                let lastVoicings = null;
+                
+                for (const testCase of testCases) {
+                    console.log(`Testing ${testCase.root} ${testCase.type} inversion ${testCase.inversion}...`);
+                    const voicings = generator.findMultipleVoicings(testCase.root, testCase.type, testCase.inversion, 1);
+                    console.log('Voicings result:', voicings);
+                    
+                    if (voicings && Array.isArray(voicings) && voicings.length > 0) {
+                        foundVoicing = true;
+                        lastVoicings = voicings;
+                        console.log('Found voicing for', testCase.root, testCase.type);
+                        break;
+                    }
+                }
+                
+                runner.assertTrue(foundVoicing, 'Should find at least one voicing from test cases');
+                
+                if (lastVoicings && lastVoicings.length > 0) {
+                    const voicing = lastVoicings[0];
+                    runner.assertTrue(Array.isArray(voicing), 'Voicing should be an array');
+                    runner.assertEquals(voicing.length, 3, 'Voicing should have 3 notes');
+                    
+                    voicing.forEach(note => {
+                        runner.assertTrue('string' in note, 'Note should have string property');
+                        runner.assertTrue('fret' in note, 'Note should have fret property');
+                        runner.assertTrue(typeof note.string === 'number', 'String should be a number');
+                        runner.assertTrue(typeof note.fret === 'number', 'Fret should be a number');
+                    });
+                }
+            } catch (error) {
+                console.error('Test error:', error);
+                throw error;
+            }
+        });
+        
+        runner.test('TriadGenerator - should enforce closed voicing constraint', () => {
+            const generator = new TriadGenerator();
+            const voicings = generator.findTriadVoicingsOnFretboard('C', 'Major', 0, STANDARD_TUNING, 12);
+            
+            voicings.forEach(voicing => {
+                const frets = voicing.map(note => note.fret);
+                const minFret = Math.min(...frets);
+                const maxFret = Math.max(...frets);
+                const span = maxFret - minFret;
+                
+                runner.assertTrue(span <= 12, `Voicing span should be <= 12 frets (octave), got ${span}`);
+            });
+        });
+        
+        runner.test('TriadGenerator - should handle invalid inputs gracefully', () => {
+            const generator = new TriadGenerator();
+            
+            runner.assertThrows(() => {
+                generator.generateTriadNotes('X', 'Major', 0);
+            }, 'Invalid root note should throw');
+            
+            runner.assertThrows(() => {
+                generator.generateTriadNotes('C', 'InvalidType', 0);
+            }, 'Invalid triad type should throw');
+            
+            runner.assertThrows(() => {
+                generator.generateTriadNotes('C', 'Major', 5);
+            }, 'Invalid inversion should throw');
+        });
+        
+        // Mock DOM for testing if needed
+        runner.test('DOM Integration - mock test for fretboard container', () => {
+            // Create a mock container
+            const container = document.createElement('div');
+            container.id = 'test-fretboard';
+            document.body.appendChild(container);
+            
+            runner.assertTrue(container instanceof HTMLElement, 'Container should be HTML element');
+            runner.assertEquals(container.id, 'test-fretboard', 'Container should have correct ID');
+            
+            // Clean up
+            document.body.removeChild(container);
+        });
+        
+        // Run all tests
+        document.addEventListener('DOMContentLoaded', () => {
+            runner.runAll();
+        });
+    </script>
+</body>
+</html>

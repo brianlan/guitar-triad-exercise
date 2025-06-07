@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>Debug Test</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.innerHTML += msg + '<br>';
+            console.log(msg);
+        }
+        
+        try {
+            log('Starting imports...');
+            
+            const constantsModule = await import('./src/utils/Constants.js');
+            log('Constants imported: ' + Object.keys(constantsModule));
+            
+            const { STANDARD_TUNING } = constantsModule;
+            log('STANDARD_TUNING: ' + JSON.stringify(STANDARD_TUNING));
+            
+            const generatorModule = await import('./src/core/TriadGenerator.js');
+            log('TriadGenerator imported: ' + Object.keys(generatorModule));
+            
+            const { TriadGenerator } = generatorModule;
+            log('Creating TriadGenerator...');
+            
+            const generator = new TriadGenerator();
+            log('TriadGenerator created');
+            
+            log('Calling findTriadVoicingsOnFretboard...');
+            const voicings = generator.findTriadVoicingsOnFretboard('C', 'Major', 0, STANDARD_TUNING, 12);
+            log('Result: ' + JSON.stringify(voicings));
+            log('Length: ' + (voicings ? voicings.length : 'null'));
+            
+        } catch (error) {
+            log('ERROR: ' + error.message);
+            log('Stack: ' + error.stack);
+        }
+    </script>
+</body>
+</html>
