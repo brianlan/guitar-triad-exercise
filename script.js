@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Guitar Fretboard Triad Practice Tool Initialized');
 
+    // --- Debug Configuration ---
+    const DEBUG = false; // Set to true to enable debug logging
+
     // --- Constants ---
     const standardTuning = ['E', 'B', 'G', 'D', 'A', 'E']; // High E (1st string) to Low E (6th string)
     const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -48,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Functions ---
     function setupTriadSelection() {
-        console.log('Setting up triad selection...');
+        if (DEBUG) console.log('Setting up triad selection...');
         const triadCheckboxes = document.querySelectorAll('#triad-selection input[name="triad-type"]');
         const inversionCheckboxes = document.querySelectorAll('#inversion-selection input[name="inversion-type"]');
 
@@ -67,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSelectedTriads() {
         const checkedBoxes = document.querySelectorAll('#triad-selection input[name="triad-type"]:checked');
         selectedTriadTypes = Array.from(checkedBoxes).map(cb => cb.value);
-        console.log('Updated Selected Triad Types:', selectedTriadTypes);
+        if (DEBUG) console.log('Updated Selected Triad Types:', selectedTriadTypes);
         if (selectedTriadTypes.length === 0) {
             console.warn("No triad types selected!");
         }
@@ -76,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSelectedInversions() {
         const checkedBoxes = document.querySelectorAll('#inversion-selection input[name="inversion-type"]:checked');
         selectedInversions = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
-        console.log('Updated Selected Inversions:', selectedInversions);
+        if (DEBUG) console.log('Updated Selected Inversions:', selectedInversions);
         if (selectedInversions.length === 0) {
             console.warn("No inversions selected!");
             selectedInversions = [0]; // Default to root position if none selected
@@ -84,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderFretboard() {
-        console.log('Rendering fretboard...');
+        if (DEBUG) console.log('Rendering fretboard...');
         if (!fretboardContainer) return;
         fretboardContainer.innerHTML = '';
 
@@ -186,10 +189,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function playNote(stringIndex, fretIndex) {
         const noteName = getNoteName(stringIndex, fretIndex);
         if (noteName && soundEnabled) {
-            console.log(`Playing note: String ${stringIndex + 1}, Fret ${fretIndex} => Note: ${noteName}`);
+            if (DEBUG) console.log(`Playing note: String ${stringIndex + 1}, Fret ${fretIndex} => Note: ${noteName}`);
             playAudio(noteName);
         } else if (noteName) {
-            console.log(`Note clicked (sound off): String ${stringIndex + 1}, Fret ${fretIndex} => Note: ${noteName}`);
+            if (DEBUG) console.log(`Note clicked (sound off): String ${stringIndex + 1}, Fret ${fretIndex} => Note: ${noteName}`);
         }
     }
 
@@ -197,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
             audioContext = new AudioContext();
-            console.log("AudioContext initialized.");
+            if (DEBUG) console.log("AudioContext initialized.");
             const resumeAudio = () => {
                 if (audioContext.state === 'suspended') audioContext.resume();
                 document.body.removeEventListener('click', resumeAudio);
@@ -217,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function playAudio(noteName) { /* Placeholder */ console.log(`Attempt to play audio for ${noteName} (audio not implemented).`); }
 
     function setupPracticeModes() {
-        console.log('Setting up practice modes...');
+        if (DEBUG) console.log('Setting up practice modes...');
         const modeAButton = document.getElementById('select-mode-a');
         const modeBButton = document.getElementById('select-mode-b');
         const modeANextButton = document.getElementById('mode-a-next');
@@ -328,9 +331,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startModeA() {
         practiceMode = 'identification';
-        console.log('Starting Mode A');
-        console.log('Current selectedTriadTypes:', selectedTriadTypes);
-        console.log('Current selectedInversions:', selectedInversions);
+        if (DEBUG) {
+            console.log('Starting Mode A');
+            console.log('Current selectedTriadTypes:', selectedTriadTypes);
+            console.log('Current selectedInversions:', selectedInversions);
+        }
         clearHighlights();
         const optionsContainer = document.getElementById('mode-a-options');
         const feedbackContainer = document.getElementById('mode-a-feedback');
@@ -374,11 +379,19 @@ document.addEventListener('DOMContentLoaded', () => {
         generateModeAOptions(currentModeAChallenge.correctAnswer);
     }
 
+    // Utility function for retrying Mode B setup
+    function retryModeB() {
+        if (DEBUG) console.log("Retrying Mode B setup...");
+        setTimeout(startModeB, 100);
+    }
+
     function startModeB() {
         practiceMode = 'completion';
-        console.log('Starting Mode B');
-        console.log('Current selectedTriadTypes:', selectedTriadTypes);
-        console.log('Current selectedInversions:', selectedInversions);
+        if (DEBUG) {
+            console.log('Starting Mode B');
+            console.log('Current selectedTriadTypes:', selectedTriadTypes);
+            console.log('Current selectedInversions:', selectedInversions);
+        }
         clearHighlights();
         document.querySelectorAll('.fret.highlighted-correct, .fret.highlighted-incorrect').forEach(f => {
             f.classList.remove('highlighted-correct', 'highlighted-incorrect');
@@ -410,8 +423,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Issue 3: Ensure triadVoicing has 3 notes with 3 unique note names
         if (!triadVoicing || triadVoicing.length !== 3) {
             if (instructionText) instructionText.textContent = 'Finding pattern... (retry)';
-            console.warn(`Retrying Mode B: findTriadVoicingOnFretboard returned ${triadVoicing ? triadVoicing.length : 'null'} notes for ${randomRoot} ${randomType} Inv ${randomInversion}.`);
-            setTimeout(startModeB, 100); // Retry
+            if (DEBUG) console.warn(`Retrying Mode B: findTriadVoicingOnFretboard returned ${triadVoicing ? triadVoicing.length : 'null'} notes for ${randomRoot} ${randomType} Inv ${randomInversion}.`);
+            retryModeB(); // Retry
             return;
         }
 
@@ -420,8 +433,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Debug: Verify we have exactly 3 notes
         if (fullTriadPattern.length !== 3) {
-            console.error(`Mode B: Expected exactly 3 notes in triad pattern, but got ${fullTriadPattern.length}:`, fullTriadPattern);
-            setTimeout(startModeB, 100); // Retry
+            if (DEBUG) console.error(`Mode B: Expected exactly 3 notes in triad pattern, but got ${fullTriadPattern.length}:`, fullTriadPattern);
+            retryModeB(); // Retry
             return;
         }
 
@@ -429,8 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const noteNames = fullTriadPattern.map(n => n.note);
         const uniqueNoteNames = [...new Set(noteNames)];
         if (uniqueNoteNames.length !== 3) {
-            console.error(`Mode B: Expected 3 unique note names, but got ${uniqueNoteNames.length}:`, noteNames);
-            setTimeout(startModeB, 100); // Retry
+            if (DEBUG) console.error(`Mode B: Expected 3 unique note names, but got ${uniqueNoteNames.length}:`, noteNames);
+            retryModeB(); // Retry
             return;
         }
 
@@ -438,8 +451,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const positionKeys = fullTriadPattern.map(pos => `${pos.string}-${pos.fret}`);
         const uniquePositions = [...new Set(positionKeys)];
         if (uniquePositions.length !== 3) {
-            console.error(`Mode B: Expected 3 unique positions, but got ${uniquePositions.length}:`, positionKeys);
-            setTimeout(startModeB, 100); // Retry
+            if (DEBUG) console.error(`Mode B: Expected 3 unique positions, but got ${uniquePositions.length}:`, positionKeys);
+            retryModeB(); // Retry
             return;
         }
 
@@ -459,21 +472,25 @@ document.addEventListener('DOMContentLoaded', () => {
             startTime: Date.now() // Record start time
         };
 
-        console.log(`Mode B: Starting with ${fullTriadPattern.length} target notes:`, fullTriadPattern.map(n => `${n.note} (S${n.string+1}F${n.fret})`).join(', '));
-        console.log(`Mode B: Initial note: ${initialNoteToShow.note} (S${initialNoteToShow.string+1}F${initialNoteToShow.fret})`);
-        console.log(`Mode B: Notes to find: ${currentModeBChallenge.notesToFind.join(', ')}`);
-        
-        // CRITICAL: Double-check targetNotesFull after assignment
-        console.log(`VERIFICATION: currentModeBChallenge.targetNotesFull has ${currentModeBChallenge.targetNotesFull.length} elements:`);
-        currentModeBChallenge.targetNotesFull.forEach((note, i) => {
-            console.log(`  ${i+1}. ${note.note} at String ${note.string+1}, Fret ${note.fret}`);
-        });
+        if (DEBUG) {
+            console.log(`Mode B: Starting with ${fullTriadPattern.length} target notes:`, fullTriadPattern.map(n => `${n.note} (S${n.string+1}F${n.fret})`).join(', '));
+            console.log(`Mode B: Initial note: ${initialNoteToShow.note} (S${initialNoteToShow.string+1}F${initialNoteToShow.fret})`);
+            console.log(`Mode B: Notes to find: ${currentModeBChallenge.notesToFind.join(', ')}`);
+            
+            // CRITICAL: Double-check targetNotesFull after assignment
+            console.log(`VERIFICATION: currentModeBChallenge.targetNotesFull has ${currentModeBChallenge.targetNotesFull.length} elements:`);
+            currentModeBChallenge.targetNotesFull.forEach((note, i) => {
+                console.log(`  ${i+1}. ${note.note} at String ${note.string+1}, Fret ${note.fret}`);
+            });
+        }
         
         if (currentModeBChallenge.targetNotesFull.length !== 3) {
-            console.error(`CRITICAL BUG: targetNotesFull should have 3 elements but has ${currentModeBChallenge.targetNotesFull.length}!`);
-            console.error(`This is the source of the 4-note bug!`);
+            if (DEBUG) {
+                console.error(`CRITICAL BUG: targetNotesFull should have 3 elements but has ${currentModeBChallenge.targetNotesFull.length}!`);
+                console.error(`This is the source of the 4-note bug!`);
+            }
             // Force retry to avoid the bug
-            setTimeout(startModeB, 100);
+            retryModeB();
             return;
         }
 
@@ -485,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (initialFretElement) {
             initialFretElement.classList.add('highlighted');
         } else {
-            console.error("Could not find initial fret element for Mode B:", initialNoteToShow);
+            if (DEBUG) console.error("Could not find initial fret element for Mode B:", initialNoteToShow);
         }
     }
 
@@ -510,13 +527,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log(`Found fret element for ${notePos.note}, current classes:`, fretEl.className);
                         fretEl.classList.remove('highlighted', 'highlighted-incorrect');
                         fretEl.classList.add('highlighted-correct');
-                        console.log(`After highlighting, classes:`, fretEl.className);
+                        if (DEBUG) console.log(`After highlighting, classes:`, fretEl.className);
                     } else {
-                        console.error(`Could not find fret element for note ${notePos.note} at S${notePos.string}F${notePos.fret}`);
+                        if (DEBUG) console.error(`Could not find fret element for note ${notePos.note} at S${notePos.string}F${notePos.fret}`);
                     }
                 });
             } else {
-                console.error(`Mode B: Expected exactly 3 target notes, but got ${currentModeBChallenge.targetNotesFull.length}:`, currentModeBChallenge.targetNotesFull);
+                if (DEBUG) console.error(`Mode B: Expected exactly 3 target notes, but got ${currentModeBChallenge.targetNotesFull.length}:`, currentModeBChallenge.targetNotesFull);
             }
         } else {
             feedbackContainer.textContent = `Challenge ended. Triad: ${currentModeBChallenge.targetNotesFull.map(n => n.note).join(', ')}.`;
@@ -646,11 +663,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                             // Check for duplicate positions
                                             const positionStrings = finalVoicing.map(v => `S${v.string}F${v.fret}`);
                                             const uniquePositions = [...new Set(positionStrings)];
-                                            console.log(`Position strings:`, positionStrings);
-                                            console.log(`Unique positions (${uniquePositions.length}):`, uniquePositions);
+                                            if (DEBUG) {
+                                                console.log(`Position strings:`, positionStrings);
+                                                console.log(`Unique positions (${uniquePositions.length}):`, uniquePositions);
+                                            }
                                             
                                             if (uniquePositions.length !== 3) {
-                                                console.error(`DUPLICATE POSITIONS DETECTED! Expected 3 unique positions, got ${uniquePositions.length}`);
+                                                if (DEBUG) console.error(`DUPLICATE POSITIONS DETECTED! Expected 3 unique positions, got ${uniquePositions.length}`);
                                                 continue; // Skip this voicing
                                             }
                                             
@@ -683,22 +702,24 @@ document.addEventListener('DOMContentLoaded', () => {
                                                 
                                                 console.log(`✓ VALID VOICING FOUND!`);
                                                 console.log(`  Notes: ${noteNames.join(', ')}`);
-                                                console.log(`  Positions: ${finalVoicing.map(v => `S${v.string+1}F${v.fret}`).join(', ')}`);
-                                                console.log(`  Fret span: ${fretSpan}, Pitch span: ${pitchSpan}`);
-                                                console.log(`  Bass note: ${bassNote}, Expected: ${expectedBassNote}`);
+                                                if (DEBUG) {
+                                                    console.log(`  Positions: ${finalVoicing.map(v => `S${v.string+1}F${v.fret}`).join(', ')}`);
+                                                    console.log(`  Fret span: ${fretSpan}, Pitch span: ${pitchSpan}`);
+                                                    console.log(`  Bass note: ${bassNote}, Expected: ${expectedBassNote}`);
+                                                }
                                                 
                                                 const sortedFinalVoicing = finalVoicing.sort((a, b) => a.string - b.string);
-                                                console.log(`Final voicing being returned (${sortedFinalVoicing.length} notes):`, sortedFinalVoicing);
+                                                if (DEBUG) console.log(`Final voicing being returned (${sortedFinalVoicing.length} notes):`, sortedFinalVoicing);
                                                 
                                                 // Final verification before return
                                                 if (sortedFinalVoicing.length !== 3) {
-                                                    console.error(`CRITICAL ERROR: About to return ${sortedFinalVoicing.length} notes instead of 3!`);
+                                                    if (DEBUG) console.error(`CRITICAL ERROR: About to return ${sortedFinalVoicing.length} notes instead of 3!`);
                                                     return null;
                                                 }
                                                 
                                                 return sortedFinalVoicing;
                                             } else {
-                                                console.log(`✗ Voicing rejected:`, {
+                                                if (DEBUG) console.log(`✗ Voicing rejected:`, {
                                                     uniqueNotesSize: uniqueNotes.size,
                                                     hasAllTargetNotes: noteNames.every(note => uniqueTargetNotes.includes(note)),
                                                     targetHasAllNotes: uniqueTargetNotes.every(note => noteNames.includes(note)),
