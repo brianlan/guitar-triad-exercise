@@ -604,11 +604,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function findTriadVoicingOnFretboard(rootNote, triadType, inversion = 0) {
-        console.log(`findTriadVoicingOnFretboard called: ${rootNote} ${triadType} Inv ${inversion}`);
+        if (DEBUG) {
+            console.log(`findTriadVoicingOnFretboard called: ${rootNote} ${triadType} Inv ${inversion}`);
+        }
         const targetNotes = calculateTriadNotes(rootNote, triadType);
         if (!targetNotes) return null;
         
-        console.log(`Target notes for ${rootNote} ${triadType}:`, targetNotes);
+        if (DEBUG) {
+            console.log(`Target notes for ${rootNote} ${triadType}:`, targetNotes);
+        }
         
         // Ensure we have exactly 3 unique notes for the triad
         const uniqueTargetNotes = [...new Set(targetNotes)];
