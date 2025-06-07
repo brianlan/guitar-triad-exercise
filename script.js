@@ -484,6 +484,11 @@ document.addEventListener('DOMContentLoaded', () => {
             targetNotes: currentModeBChallenge.targetNotesFull,
             notesToFind: currentModeBChallenge.notesToFind
         });
+
+        // Automatically show the next challenge after a delay
+        setTimeout(() => {
+            startModeB();
+        }, 1500); // 1.5 second delay before loading next challenge
     }
 
     function clearHighlights() {
