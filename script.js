@@ -781,6 +781,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Make clearStatistics globally accessible
+    window.clearStatistics = clearStatistics;
+
     // --- Initialization ---
     initAudioContext();
     // await loadAudioSamples(); // If using actual audio files
