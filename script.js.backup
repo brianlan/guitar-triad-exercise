@@ -1,15 +1,20 @@
-import { MusicTheory } from './modules/MusicTheory.js';
-
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Guitar Fretboard Triad Practice Tool Initialized');
 
     // --- Debug Configuration ---
     const DEBUG = false; // Set to true to enable debug logging
 
-    // --- Constants from MusicTheory module ---
-    const standardTuning = MusicTheory.standardTuning;
-    const notes = MusicTheory.notes;
-    const triadIntervals = MusicTheory.triadIntervals;
+    // --- Constants ---
+    const standardTuning = ['E', 'B', 'G', 'D', 'A', 'E']; // High E (1st string) to Low E (6th string)
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+    // --- State Variables ---
+    const triadIntervals = {
+        'Major': [0, 4, 7],      // Root, Major Third (4 semitones), Perfect Fifth (7 semitones)
+        'Minor': [0, 3, 7],      // Root, Minor Third (3 semitones), Perfect Fifth (7 semitones)
+        'Diminished': [0, 3, 6], // Root, Minor Third (3 semitones), Diminished Fifth (6 semitones)
+        'Augmented': [0, 4, 8]   // Root, Major Third (4 semitones), Augmented Fifth (8 semitones)
+    };
     let currentTuning = [...standardTuning];
     let numFrets = 12;
     let selectedTriadTypes = ['Major']; // Default
@@ -167,7 +172,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getNoteName(stringIndex, fretIndex) {
-        return MusicTheory.getNoteName(stringIndex, fretIndex, currentTuning);
+        const openNote = currentTuning[stringIndex];
+        if (!openNote) {
+            console.error(`Invalid string index: ${stringIndex}`);
+            return null;
+        }
+        const openNoteIndex = notes.indexOf(openNote.toUpperCase());
+        if (openNoteIndex === -1) {
+            console.error(`Invalid tuning note: ${openNote} for string index ${stringIndex}`);
+            return null;
+        }
+        const noteIndex = (openNoteIndex + fretIndex) % notes.length;
+        return notes[noteIndex];
     }
 
     function playNote(stringIndex, fretIndex) {
@@ -237,7 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatChordName(root, type, inversion) {
-        return MusicTheory.formatChordName(root, type, inversion);
+        let name = root;
+        if (type) name += ` ${type}`;
+        if (inversion === 1) name += ' (1st Inv)';
+        else if (inversion === 2) name += ' (2nd Inv)';
+        return name;
     }
 
     function generateModeAOptions(correctAnswer, numOptions = 4) {
@@ -563,21 +583,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return arr[Math.floor(Math.random() * arr.length)];
     }
 
-    function getNoteIndex(noteName) { 
-        return MusicTheory.getNoteIndex(noteName); 
-    }
-    
-    function getNoteFromIndex(index) { 
-        return MusicTheory.getNoteFromIndex(index); 
-    }
+    function getNoteIndex(noteName) { return notes.indexOf(noteName.toUpperCase()); }
+    function getNoteFromIndex(index) { return notes[index % notes.length]; }
 
     // Calculate absolute pitch for proper close voicing validation
+    // Standard guitar tuning pitches (in semitones from C0): E4, B3, G3, D3, A2, E2
     function getAbsolutePitch(stringIndex, fretIndex) {
-        return MusicTheory.getAbsolutePitch(stringIndex, fretIndex);
+        // Define the absolute pitch of each open string in semitones from C0
+        // Standard tuning: E4(64), B3(59), G3(55), D3(50), A2(45), E2(40)
+        const openStringPitches = [64, 59, 55, 50, 45, 40]; // High E to Low E
+        return openStringPitches[stringIndex] + fretIndex;
     }
 
     function calculateTriadNotes(rootNote, triadType) {
-        return MusicTheory.calculateTriadNotes(rootNote, triadType);
+        const rootIndex = getNoteIndex(rootNote);
+        if (rootIndex === -1) return null;
+        const intervals = triadIntervals[triadType];
+        if (!intervals) return null;
+        return intervals.map(interval => getNoteFromIndex(rootIndex + interval));
     }
 
     function findTriadVoicingOnFretboard(rootNote, triadType, inversion = 0) {
@@ -875,7 +898,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getInversionName(inversion) {
-        return MusicTheory.getInversionName(inversion);
+        const names = {
+            '0': 'Root Position',
+            '1': '1st Inversion',
+            '2': '2nd Inversion'
+        };
+        return names[inversion] || `Inversion ${inversion}`;
     }
 
     function clearStatistics() {
