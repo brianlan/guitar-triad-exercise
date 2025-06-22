@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitar Triad Practice Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>Guitar Triad Practice Tool</h1>
+            <div class="mode-selector">
+                <button id="mode-a-btn" class="mode-btn active">Mode A: Identification</button>
+                <button id="mode-b-btn" class="mode-btn">Mode B: Completion</button>
+                <button id="review-btn" class="mode-btn">Review</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="controls-panel">
+                <div class="triad-selection">
+                    <h3>Triad Types</h3>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="major" checked> Major</label>
+                        <label><input type="checkbox" id="minor" checked> Minor</label>
+                        <label><input type="checkbox" id="diminished"> Diminished</label>
+                        <label><input type="checkbox" id="augmented"> Augmented</label>
+                    </div>
+                </div>
+
+                <div class="inversion-selection">
+                    <h3>Inversions</h3>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="root-position" checked> Root Position</label>
+                        <label><input type="checkbox" id="first-inversion"> 1st Inversion</label>
+                        <label><input type="checkbox" id="second-inversion"> 2nd Inversion</label>
+                    </div>
+                </div>
+
+                <div class="settings">
+                    <h3>Settings</h3>
+                    <div class="setting-group">
+                        <label for="fret-count">Frets: <span id="fret-count-display">12</span></label>
+                        <input type="range" id="fret-count" min="12" max="24" value="12">
+                    </div>
+                    <div class="setting-group">
+                        <label><input type="checkbox" id="audio-enabled" checked> Audio Enabled</label>
+                    </div>
+                </div>
+
+                <div class="game-controls">
+                    <button id="start-btn" class="btn primary">Start Practice</button>
+                    <button id="next-btn" class="btn secondary" disabled>Next Question</button>
+                    <button id="replay-btn" class="btn secondary" disabled>Replay Audio</button>
+                </div>
+            </div>
+
+            <div class="fretboard-container">
+                <div id="fretboard" class="fretboard">
+                    <!-- Fretboard will be generated dynamically -->
+                </div>
+            </div>
+
+            <div class="quiz-panel">
+                <div id="question-display" class="question-display">
+                    <p>Select your practice settings and click "Start Practice" to begin.</p>
+                </div>
+
+                <div id="mode-a-options" class="quiz-options" style="display: none;">
+                    <!-- Multiple choice options for Mode A -->
+                </div>
+
+                <div id="mode-b-progress" class="completion-progress" style="display: none;">
+                    <p>Complete the chord by clicking the missing notes on the fretboard.</p>
+                    <div class="progress-info">
+                        <span id="notes-found">0</span> of <span id="notes-total">2</span> notes found
+                    </div>
+                </div>
+
+                <div id="feedback" class="feedback"></div>
+            </div>
+        </main>
+
+        <footer class="stats-panel">
+            <div class="stats-summary">
+                <div class="stat-item">
+                    <span class="stat-label">Accuracy:</span>
+                    <span id="accuracy-stat">0%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Questions:</span>
+                    <span id="questions-stat">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Avg Time:</span>
+                    <span id="time-stat">0s</span>
+                </div>
+            </div>
+            <button id="stats-btn" class="btn secondary">View Detailed Stats</button>
+        </footer>
+    </div>
+
+    <div id="stats-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Performance Statistics</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="stats-content">
+                    <!-- Statistics will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="music-theory.js"></script>
+    <script src="fretboard.js"></script>
+    <script src="audio-manager.js"></script>
+    <script src="game-modes.js"></script>
+    <script src="statistics.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
