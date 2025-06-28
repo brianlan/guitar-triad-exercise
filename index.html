@@ -3,14 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guitar Fretboard</title>
+    <title>Guitar Fretboard Training</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Guitar Fretboard</h1>
-        <div id="fretboard-container">
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Guitar Fretboard</h1>
+        </header>
+        
+        <div id="settings-zone" class="zone">
+            <h3>Settings Zone</h3>
+            <div class="settings-content">
+                <label>
+                    Number of frets:
+                    <select id="fret-count">
+                        <option value="12">12</option>
+                        <option value="15">15</option>
+                        <option value="16">16</option>
+                    </select>
+                </label>
+                <button id="clear-dots">Clear All</button>
+                <button id="random-chord">Random Chord</button>
+            </div>
+        </div>
+        
+        <div id="fretboard-container" class="zone">
             <div id="fretboard"></div>
+        </div>
+        
+        <div id="qa-zone" class="zone">
+            <h3>Question & Answering Zone</h3>
+            <div class="qa-content">
+                <p>Click on the fretboard to place finger positions and practice chord formations.</p>
+                <div class="question-display">
+                    <p>Ready to practice!</p>
+                </div>
+                <div class="answer-input">
+                    <button id="check-answer">Check Answer</button>
+                    <button id="show-hint">Show Hint</button>
+                    <button id="next-question">Next Question</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="stats-zone" class="zone">
+            <h3>Statistics and History Zone</h3>
+            <div class="stats-content">
+                <div class="score-display">
+                    <p>Score: <span id="score">0</span></p>
+                    <p>Streak: <span id="streak">0</span></p>
+                </div>
+                <div class="history">
+                    <h4>Recent Activity</h4>
+                    <ul id="activity-log">
+                        <li>Welcome to Guitar Fretboard Training!</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
     <script src="script.js"></script>

@@ -5,7 +5,9 @@ class GuitarFretboard {
         this.strings = ['E', 'B', 'G', 'D', 'A', 'E'];
         this.fretboardWidth = 1000;
         this.fretboardHeight = 250;
+        this.fingerDots = [];
         this.init();
+        this.setupInteractivity();
     }
 
     init() {
@@ -123,8 +125,224 @@ class GuitarFretboard {
         marker.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.2)';
         this.container.appendChild(marker);
     }
+
+    setupInteractivity() {
+        // Add click event listener to fretboard for finger dot placement
+        this.container.addEventListener('click', (e) => {
+            if (e.target === this.container || e.target.classList.contains('string')) {
+                this.handleFretboardClick(e);
+            }
+        });
+
+        // Add some initial finger dots as shown in the image
+        this.addInitialFingerDots();
+    }
+
+    handleFretboardClick(e) {
+        const rect = this.container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Find the closest string and fret position
+        const stringInfo = this.getClosestString(y);
+        const fretInfo = this.getClosestFret(x);
+
+        if (stringInfo && fretInfo) {
+            this.toggleFingerDot(stringInfo.index, fretInfo.fret, fretInfo.x, stringInfo.y);
+        }
+    }
+
+    getClosestString(y) {
+        const stringSpacing = this.fretboardHeight / 7;
+        let closestString = null;
+        let minDistance = Infinity;
+
+        for (let i = 0; i < this.strings.length; i++) {
+            const stringY = stringSpacing * (i + 1);
+            const distance = Math.abs(y - stringY);
+            
+            if (distance < minDistance && distance < 25) { // 25px tolerance
+                minDistance = distance;
+                closestString = { index: i, y: stringY };
+            }
+        }
+
+        return closestString;
+    }
+
+    getClosestFret(x) {
+        let closestFret = null;
+        let minDistance = Infinity;
+
+        // Check fret 0 (open string)
+        const distance0 = Math.abs(x - 15);
+        if (distance0 < minDistance && distance0 < 30) {
+            minDistance = distance0;
+            closestFret = { fret: 0, x: 15 };
+        }
+
+        // Check other frets
+        for (let i = 1; i <= this.numFrets; i++) {
+            const fretX = this.getFretPosition(i);
+            const prevFretX = i === 1 ? 1 : this.getFretPosition(i - 1);
+            const midX = prevFretX + (fretX - prevFretX) / 2;
+            
+            const distance = Math.abs(x - midX);
+            if (distance < minDistance && distance < (fretX - prevFretX) / 2) {
+                minDistance = distance;
+                closestFret = { fret: i, x: midX };
+            }
+        }
+
+        return closestFret;
+    }
+
+    toggleFingerDot(stringIndex, fret, x, y) {
+        // Check if dot already exists at this position
+        const existingDotIndex = this.fingerDots.findIndex(
+            dot => dot.string === stringIndex && dot.fret === fret
+        );
+
+        if (existingDotIndex >= 0) {
+            // Remove existing dot
+            const dot = this.fingerDots[existingDotIndex];
+            this.container.removeChild(dot.element);
+            this.fingerDots.splice(existingDotIndex, 1);
+        } else {
+            // Add new dot
+            this.addFingerDot(stringIndex, fret, x, y);
+        }
+    }
+
+    addFingerDot(stringIndex, fret, x, y) {
+        const dot = document.createElement('div');
+        dot.className = 'finger-dot';
+        dot.style.left = `${x - 10}px`;
+        dot.style.top = `${y - 10}px`;
+        
+        // Store dot information
+        const dotInfo = {
+            element: dot,
+            string: stringIndex,
+            fret: fret,
+            note: this.getNote(stringIndex, fret)
+        };
+
+        this.fingerDots.push(dotInfo);
+        this.container.appendChild(dot);
+
+        // Add click handler to remove dot
+        dot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleFingerDot(stringIndex, fret, x, y);
+        });
+    }
+
+    addInitialFingerDots() {
+        // Add some initial finger dots to match the image pattern
+        // These represent a C major chord pattern
+        this.addFingerDot(1, 1, this.getFretPosition(0.5), this.fretboardHeight / 7 * 2); // B string, 1st fret
+        this.addFingerDot(2, 0, 15, this.fretboardHeight / 7 * 3); // G string, open
+        this.addFingerDot(3, 2, this.getFretPosition(1.5), this.fretboardHeight / 7 * 4); // D string, 2nd fret
+        this.addFingerDot(4, 2, this.getFretPosition(1.5), this.fretboardHeight / 7 * 5); // A string, 2nd fret
+        this.addFingerDot(5, 0, 15, this.fretboardHeight / 7 * 6); // E string, open
+    }
+
+    getNote(stringIndex, fret) {
+        const openStringNotes = ['E', 'B', 'G', 'D', 'A', 'E'];
+        const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        
+        const openNote = openStringNotes[stringIndex];
+        const openNoteIndex = notes.indexOf(openNote);
+        const noteIndex = (openNoteIndex + fret) % 12;
+        
+        return notes[noteIndex];
+    }
+
+    clearAllDots() {
+        this.fingerDots.forEach(dot => {
+            this.container.removeChild(dot.element);
+        });
+        this.fingerDots = [];
+    }
+}
+
+// App controller
+class FretboardApp {
+    constructor() {
+        this.fretboard = new GuitarFretboard('fretboard');
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        const clearButton = document.getElementById('clear-dots');
+        const randomChordButton = document.getElementById('random-chord');
+        const fretCountSelect = document.getElementById('fret-count');
+
+        if (clearButton) {
+            clearButton.addEventListener('click', () => {
+                this.fretboard.clearAllDots();
+                this.logActivity('Cleared all finger positions');
+            });
+        }
+
+        if (randomChordButton) {
+            randomChordButton.addEventListener('click', () => {
+                this.showRandomChord();
+            });
+        }
+
+        if (fretCountSelect) {
+            fretCountSelect.addEventListener('change', (e) => {
+                this.updateFretCount(parseInt(e.target.value));
+            });
+        }
+    }
+
+    showRandomChord() {
+        this.fretboard.clearAllDots();
+        
+        const chords = [
+            { name: 'C Major', positions: [[1, 1], [3, 2], [4, 2]] },
+            { name: 'G Major', positions: [[0, 3], [4, 2], [5, 3]] },
+            { name: 'D Major', positions: [[1, 2], [2, 3], [3, 2]] },
+            { name: 'A Major', positions: [[1, 2], [2, 2], [3, 2]] },
+            { name: 'E Major', positions: [[2, 1], [3, 2], [4, 2]] }
+        ];
+
+        const randomChord = chords[Math.floor(Math.random() * chords.length)];
+        
+        randomChord.positions.forEach(([stringIndex, fret]) => {
+            const fretX = fret === 0 ? 15 : this.fretboard.getFretPosition(fret - 0.5);
+            const stringY = this.fretboard.fretboardHeight / 7 * (stringIndex + 1);
+            this.fretboard.addFingerDot(stringIndex, fret, fretX, stringY);
+        });
+
+        this.logActivity(`Displayed ${randomChord.name} chord`);
+    }
+
+    updateFretCount(count) {
+        const container = document.getElementById('fretboard');
+        container.innerHTML = '';
+        this.fretboard = new GuitarFretboard('fretboard', count);
+        this.logActivity(`Changed to ${count} frets`);
+    }
+
+    logActivity(message) {
+        const activityLog = document.getElementById('activity-log');
+        if (activityLog) {
+            const li = document.createElement('li');
+            li.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            activityLog.insertBefore(li, activityLog.firstChild);
+            
+            // Keep only last 10 entries
+            while (activityLog.children.length > 10) {
+                activityLog.removeChild(activityLog.lastChild);
+            }
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new GuitarFretboard('fretboard');
+    new FretboardApp();
 });

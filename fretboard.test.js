@@ -231,4 +231,123 @@ describe('Guitar Fretboard', () => {
         
         expect(fret2 - fret1).toBeGreaterThan(60); // Confirms wider spacing
     });
+
+    // New tests for multi-zone layout
+    test('should have Settings Zone with proper styling', async () => {
+        const settingsZone = await page.$('#settings-zone');
+        expect(settingsZone).toBeTruthy();
+        
+        const styles = await page.evaluate(el => {
+            const computed = window.getComputedStyle(el);
+            return {
+                border: computed.border,
+                backgroundColor: computed.backgroundColor,
+                gridArea: computed.gridArea
+            };
+        }, settingsZone);
+        
+        expect(styles.border).toContain('2px');
+        expect(styles.border).toContain('220, 20, 60'); // RGB for #dc143c (red)
+    });
+
+    test('should have Question & Answering Zone with proper dimensions', async () => {
+        const qaZone = await page.$('#qa-zone');
+        expect(qaZone).toBeTruthy();
+        
+        const boundingBox = await qaZone.boundingBox();
+        expect(boundingBox.width).toBeGreaterThan(500);
+        expect(boundingBox.height).toBeGreaterThan(200);
+        
+        const text = await page.evaluate(el => el.textContent, qaZone);
+        expect(text).toContain('Question & Answering Zone');
+    });
+
+    test('should have Statistics and History Zone', async () => {
+        const statsZone = await page.$('#stats-zone');
+        expect(statsZone).toBeTruthy();
+        
+        const styles = await page.evaluate(el => {
+            const computed = window.getComputedStyle(el);
+            return {
+                border: computed.border,
+                backgroundColor: computed.backgroundColor
+            };
+        }, statsZone);
+        
+        expect(styles.border).toContain('2px');
+        expect(styles.border).toContain('220, 20, 60'); // RGB for #dc143c (red)
+        
+        const text = await page.evaluate(el => el.textContent, statsZone);
+        expect(text).toContain('Statistics and History Zone');
+    });
+
+    test('should have proper CSS Grid layout structure', async () => {
+        const container = await page.$('.app-container');
+        expect(container).toBeTruthy();
+        
+        const styles = await page.evaluate(el => {
+            const computed = window.getComputedStyle(el);
+            return {
+                display: computed.display,
+                gridTemplateColumns: computed.gridTemplateColumns,
+                gridTemplateRows: computed.gridTemplateRows
+            };
+        }, container);
+        
+        expect(styles.display).toBe('grid');
+        expect(styles.gridTemplateColumns).toBeTruthy();
+        expect(styles.gridTemplateRows).toBeTruthy();
+    });
+
+    test('should display finger position dots on fretboard strings', async () => {
+        // Test for interactive finger position dots as shown in the image
+        const fingerDots = await page.$$('.finger-dot');
+        expect(fingerDots.length).toBeGreaterThanOrEqual(3); // Should have some finger positions
+        
+        // Verify dots are positioned on strings
+        for (let dot of fingerDots) {
+            const styles = await page.evaluate(el => {
+                const computed = window.getComputedStyle(el);
+                return {
+                    position: computed.position,
+                    backgroundColor: computed.backgroundColor,
+                    borderRadius: computed.borderRadius
+                };
+            }, dot);
+            
+            expect(styles.position).toBe('absolute');
+            expect(styles.borderRadius).toBe('50%');
+        }
+    });
+
+    test('layout should match image reference - visual verification', async () => {
+        // Comprehensive layout verification
+        const zones = ['#settings-zone', '#fretboard-container', '#qa-zone', '#stats-zone'];
+        
+        for (let zoneSelector of zones) {
+            const zone = await page.$(zoneSelector);
+            expect(zone).toBeTruthy();
+            
+            const boundingBox = await zone.boundingBox();
+            expect(boundingBox.width).toBeGreaterThan(0);
+            expect(boundingBox.height).toBeGreaterThan(0);
+        }
+        
+        // Verify zones are positioned correctly relative to each other
+        const settingsBox = await (await page.$('#settings-zone')).boundingBox();
+        const fretboardBox = await (await page.$('#fretboard-container')).boundingBox();
+        const qaBox = await (await page.$('#qa-zone')).boundingBox();
+        const statsBox = await (await page.$('#stats-zone')).boundingBox();
+        
+        // Settings should be top-left, fretboard top-right (with some tolerance for grid gaps)
+        expect(settingsBox.x).toBeLessThanOrEqual(fretboardBox.x);
+        expect(settingsBox.y).toBeLessThanOrEqual(fretboardBox.y + 50);
+        
+        // QA zone should be below fretboard
+        expect(qaBox.y).toBeGreaterThan(fretboardBox.y + fretboardBox.height - 50);
+        
+        // Stats should be bottom-left
+        expect(statsBox.x).toBeLessThan(qaBox.x + qaBox.width);
+        expect(statsBox.y).toBeGreaterThan(settingsBox.y + settingsBox.height - 50);
+    });
 });
