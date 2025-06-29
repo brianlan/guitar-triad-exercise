@@ -239,13 +239,8 @@ class GuitarFretboard {
     }
 
     addInitialFingerDots() {
-        // Add some initial finger dots to match the image pattern
-        // These represent a C major chord pattern
-        this.addFingerDot(1, 1, this.getFretPosition(0.5), this.fretboardHeight / 7 * 2); // B string, 1st fret
-        this.addFingerDot(2, 0, 15, this.fretboardHeight / 7 * 3); // G string, open
-        this.addFingerDot(3, 2, this.getFretPosition(1.5), this.fretboardHeight / 7 * 4); // D string, 2nd fret
-        this.addFingerDot(4, 2, this.getFretPosition(1.5), this.fretboardHeight / 7 * 5); // A string, 2nd fret
-        this.addFingerDot(5, 0, 15, this.fretboardHeight / 7 * 6); // E string, open
+        // No initial finger dots for triad exercise
+        // Users will learn by clicking Random Chord button
     }
 
     getNote(stringIndex, fret) {
@@ -297,20 +292,122 @@ class FretboardApp {
                 this.updateFretCount(parseInt(e.target.value));
             });
         }
+
+        this.setupChordSettings();
+    }
+
+    setupChordSettings() {
+        const chordTypeCheckboxes = ['major', 'minor', 'diminished', 'augmented'];
+        const voicingCheckboxes = ['open', 'closed'];
+        const inversionCheckboxes = ['root', 'first', 'second'];
+
+        chordTypeCheckboxes.forEach(type => {
+            const checkbox = document.getElementById(`chord-type-${type}`);
+            if (checkbox) {
+                checkbox.addEventListener('change', () => {
+                    this.handleChordTypeChange(type, checkbox.checked);
+                });
+            }
+        });
+
+        voicingCheckboxes.forEach(voicing => {
+            const checkbox = document.getElementById(`voicing-${voicing}`);
+            if (checkbox) {
+                checkbox.addEventListener('change', () => {
+                    this.handleVoicingChange(voicing, checkbox.checked);
+                });
+            }
+        });
+
+        inversionCheckboxes.forEach(inversion => {
+            const checkbox = document.getElementById(`inversion-${inversion}`);
+            if (checkbox) {
+                checkbox.addEventListener('change', () => {
+                    this.handleInversionChange(inversion, checkbox.checked);
+                });
+            }
+        });
+    }
+
+    handleChordTypeChange(type, checked) {
+        const message = checked ? `Enabled ${type} chords` : `Disabled ${type} chords`;
+        this.logActivity(message);
+        
+        const selectedTypes = this.getSelectedChordTypes();
+        if (selectedTypes.length === 0) {
+            document.getElementById('chord-type-major').checked = true;
+            this.logActivity('Auto-enabled Major chords (at least one type required)');
+        }
+    }
+
+    handleVoicingChange(voicing, checked) {
+        const message = checked ? `Enabled ${voicing} voicing` : `Disabled ${voicing} voicing`;
+        this.logActivity(message);
+        
+        const selectedVoicings = this.getSelectedVoicings();
+        if (selectedVoicings.length === 0) {
+            document.getElementById('voicing-closed').checked = true;
+            this.logActivity('Auto-enabled Closed voicing (at least one voicing required)');
+        }
+    }
+
+    handleInversionChange(inversion, checked) {
+        const message = checked ? `Enabled ${inversion} inversion` : `Disabled ${inversion} inversion`;
+        this.logActivity(message);
+        
+        const selectedInversions = this.getSelectedInversions();
+        if (selectedInversions.length === 0) {
+            document.getElementById('inversion-root').checked = true;
+            this.logActivity('Auto-enabled Root position (at least one inversion required)');
+        }
+    }
+
+    getSelectedChordTypes() {
+        const types = ['major', 'minor', 'diminished', 'augmented'];
+        return types.filter(type => {
+            const checkbox = document.getElementById(`chord-type-${type}`);
+            return checkbox && checkbox.checked;
+        });
+    }
+
+    getSelectedVoicings() {
+        const voicings = ['open', 'closed'];
+        return voicings.filter(voicing => {
+            const checkbox = document.getElementById(`voicing-${voicing}`);
+            return checkbox && checkbox.checked;
+        });
+    }
+
+    getSelectedInversions() {
+        const inversions = ['root', 'first', 'second'];
+        return inversions.filter(inversion => {
+            const checkbox = document.getElementById(`inversion-${inversion}`);
+            return checkbox && checkbox.checked;
+        });
     }
 
     showRandomChord() {
         this.fretboard.clearAllDots();
         
-        const chords = [
-            { name: 'C Major', positions: [[1, 1], [3, 2], [4, 2]] },
-            { name: 'G Major', positions: [[0, 3], [4, 2], [5, 3]] },
-            { name: 'D Major', positions: [[1, 2], [2, 3], [3, 2]] },
-            { name: 'A Major', positions: [[1, 2], [2, 2], [3, 2]] },
-            { name: 'E Major', positions: [[2, 1], [3, 2], [4, 2]] }
-        ];
-
-        const randomChord = chords[Math.floor(Math.random() * chords.length)];
+        const selectedTypes = this.getSelectedChordTypes();
+        const selectedVoicings = this.getSelectedVoicings();
+        const selectedInversions = this.getSelectedInversions();
+        
+        const allChords = this.generateChordDatabase();
+        
+        // Filter chords based on selected criteria
+        const availableChords = allChords.filter(chord => 
+            selectedTypes.includes(chord.type) &&
+            selectedVoicings.includes(chord.voicing) &&
+            selectedInversions.includes(chord.inversion)
+        );
+        
+        if (availableChords.length === 0) {
+            this.logActivity('No chords match current settings');
+            return;
+        }
+        
+        const randomChord = availableChords[Math.floor(Math.random() * availableChords.length)];
         
         randomChord.positions.forEach(([stringIndex, fret]) => {
             const fretX = fret === 0 ? 15 : this.fretboard.getFretPosition(fret - 0.5);
@@ -319,6 +416,52 @@ class FretboardApp {
         });
 
         this.logActivity(`Displayed ${randomChord.name} chord`);
+    }
+
+    generateChordDatabase() {
+        return [
+            // Major chords - Closed voicing - Root position (Root note in bass for true root position)
+            { name: 'C Major', type: 'major', voicing: 'closed', inversion: 'root', positions: [[2, 0], [3, 2], [4, 3]] }, // G, E, C (bass: C)
+            { name: 'G Major', type: 'major', voicing: 'closed', inversion: 'root', positions: [[3, 0], [4, 2], [5, 3]] }, // D, B, G (bass: G)
+            { name: 'D Major', type: 'major', voicing: 'closed', inversion: 'root', positions: [[2, 2], [3, 4], [4, 5]] }, // A, F#, D (bass: D)
+            { name: 'A Major', type: 'major', voicing: 'closed', inversion: 'root', positions: [[3, 2], [4, 4], [5, 5]] }, // E, C#, A (bass: A)
+            { name: 'E Major', type: 'major', voicing: 'closed', inversion: 'root', positions: [[1, 0], [2, 1], [3, 2]] }, // B, G#, E (bass: E on String-3)
+            { name: 'F Major', type: 'major', voicing: 'closed', inversion: 'root', positions: [[1, 1], [2, 2], [3, 3]] }, // C, A, F (bass: F on String-3)
+            
+            // Additional String-3 root position variants for better String-3 coverage  
+            { name: 'G Major (String-3)', type: 'major', voicing: 'closed', inversion: 'root', positions: [[1, 3], [2, 4], [3, 5]] }, // D, B, G (bass: G on String-3)
+            
+            // Minor chords - Closed voicing - Root position (Ensuring unique triad notes: root, minor third, fifth)
+            { name: 'C Minor', type: 'minor', voicing: 'closed', inversion: 'root', positions: [[2, 1], [3, 1], [4, 1]] }, // C, D#, G
+            { name: 'G Minor', type: 'minor', voicing: 'closed', inversion: 'root', positions: [[2, 3], [3, 3], [4, 3]] }, // A#, G, D
+            { name: 'D Minor', type: 'minor', voicing: 'closed', inversion: 'root', positions: [[1, 1], [2, 2], [3, 3]] }, // D, F, A
+            { name: 'A Minor', type: 'minor', voicing: 'closed', inversion: 'root', positions: [[2, 1], [3, 2], [4, 2]] }, // C, A, E
+            { name: 'E Minor', type: 'minor', voicing: 'closed', inversion: 'root', positions: [[2, 0], [3, 2], [4, 2]] }, // G, E, B
+            
+            // Diminished chords - Closed voicing - Root position (Ensuring unique triad notes: root, minor third, diminished fifth)
+            { name: 'C Diminished', type: 'diminished', voicing: 'closed', inversion: 'root', positions: [[3, 1], [4, 0], [5, 0]] }, // C, D#, F#
+            { name: 'G Diminished', type: 'diminished', voicing: 'closed', inversion: 'root', positions: [[1, 2], [2, 0], [3, 1]] }, // D, G, A#
+            { name: 'D Diminished', type: 'diminished', voicing: 'closed', inversion: 'root', positions: [[1, 1], [2, 2], [3, 1]] }, // D, F, G#
+            
+            // Augmented chords - Closed voicing - Root position (Ensuring unique triad notes: root, major third, augmented fifth)
+            { name: 'C Augmented', type: 'augmented', voicing: 'closed', inversion: 'root', positions: [[3, 1], [4, 2], [5, 0]] }, // C, E, G#
+            { name: 'G Augmented', type: 'augmented', voicing: 'closed', inversion: 'root', positions: [[1, 3], [2, 0], [3, 1]] }, // D, G, B
+            { name: 'D Augmented', type: 'augmented', voicing: 'closed', inversion: 'root', positions: [[1, 1], [2, 3], [3, 2]] }, // D, F#, A#
+            
+            // Open voicing examples (Non-adjacent strings with unique triad notes)
+            { name: 'C Major (Open)', type: 'major', voicing: 'open', inversion: 'root', positions: [[0, 0], [2, 0], [4, 3]] }, // E, G, C
+            { name: 'G Major (Open)', type: 'major', voicing: 'open', inversion: 'root', positions: [[0, 3], [1, 3], [4, 2]] }, // G, D, B
+            { name: 'D Major (Open)', type: 'major', voicing: 'open', inversion: 'root', positions: [[0, 2], [2, 2], [4, 5]] }, // F#, A, D
+            { name: 'D Major (String-3 Open)', type: 'major', voicing: 'open', inversion: 'root', positions: [[0, 2], [2, 2], [3, 0]] }, // F#, A, D (bass: D on String-3)
+            
+            // First inversion examples (Major chords with 3 notes)
+            { name: 'C Major (1st inv)', type: 'major', voicing: 'closed', inversion: 'first', positions: [[1, 1], [2, 2], [3, 1]] },
+            { name: 'G Major (1st inv)', type: 'major', voicing: 'closed', inversion: 'first', positions: [[1, 0], [2, 0], [3, 0]] },
+            
+            // Second inversion examples (Major chords with 3 notes)
+            { name: 'C Major (2nd inv)', type: 'major', voicing: 'closed', inversion: 'second', positions: [[1, 5], [2, 5], [3, 5]] },
+            { name: 'G Major (2nd inv)', type: 'major', voicing: 'closed', inversion: 'second', positions: [[1, 3], [2, 4], [3, 3]] }
+        ];
     }
 
     updateFretCount(count) {
@@ -344,5 +487,5 @@ class FretboardApp {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new FretboardApp();
+    window.app = new FretboardApp();
 });

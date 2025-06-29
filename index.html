@@ -15,16 +15,48 @@
         <div id="settings-zone" class="zone">
             <h3>Settings Zone</h3>
             <div class="settings-content">
-                <label>
-                    Number of frets:
-                    <select id="fret-count">
-                        <option value="12">12</option>
-                        <option value="15">15</option>
-                        <option value="16">16</option>
-                    </select>
-                </label>
-                <button id="clear-dots">Clear All</button>
-                <button id="random-chord">Random Chord</button>
+                <div class="settings-row">
+                    <label>
+                        Number of frets:
+                        <select id="fret-count">
+                            <option value="12">12</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                        </select>
+                    </label>
+                </div>
+                
+                <div class="settings-row" data-group="chord-type">
+                    <label>Chord Type:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="chord-type-major" checked> Major</label>
+                        <label><input type="checkbox" id="chord-type-minor"> Minor</label>
+                        <label><input type="checkbox" id="chord-type-diminished"> Diminished</label>
+                        <label><input type="checkbox" id="chord-type-augmented"> Augmented</label>
+                    </div>
+                </div>
+
+                <div class="settings-row" data-group="voicing">
+                    <label>Voicing:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="voicing-open"> Open</label>
+                        <label><input type="checkbox" id="voicing-closed" checked> Closed</label>
+                    </div>
+                </div>
+
+                <div class="settings-row" data-group="inversion">
+                    <label>Inversion:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="inversion-root" checked> Root position</label>
+                        <label><input type="checkbox" id="inversion-first"> 1st inversion</label>
+                        <label><input type="checkbox" id="inversion-second"> 2nd inversion</label>
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <button id="clear-dots">Clear All</button>
+                    <button id="random-chord">Random Chord</button>
+                </div>
             </div>
         </div>
         
